@@ -5,7 +5,7 @@ const { Op } = require('sequelize')
 // PERBAIKAN: Mengubah nama file import model menjadi huruf kecil sesuai case-sensitive Linux
 const Attendance = require('../models/attendance')
 const User = require('../models/user')
-const Leave = require('../models/Leave')
+const Leave = require('../models/leave')
 
 // ==========================================
 // 1. JALUR PROSES ABSENSI QR (POST & GET)

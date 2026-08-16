@@ -5,7 +5,7 @@ const { Op } = require('sequelize');
 
 const User = require('../models/User'); 
 const Attendance = require('../models/Attendance'); 
-const Leave = require('../models/Leave'); 
+const Leave = require('../models/leave'); 
 
 const isAdmin = (req, res, next) => {
     if (req.session && req.session.user && req.session.user.role === 'admin') {
