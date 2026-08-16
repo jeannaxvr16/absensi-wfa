@@ -3,8 +3,9 @@ const router = express.Router();
 const bcrypt = require('bcryptjs'); // Dipakai untuk hash password user baru
 const { Op } = require('sequelize');
 
-const User = require('../models/User'); 
-const Attendance = require('../models/Attendance'); 
+// PERBAIKAN: Mengubah nama file import model menjadi huruf kecil sesuai Linux
+const User = require('../models/user'); 
+const Attendance = require('../models/attendance'); 
 const Leave = require('../models/leave'); 
 
 const isAdmin = (req, res, next) => {
