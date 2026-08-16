@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Kelola Pengajuan Izin Karyawan</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+<body class="bg-light py-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold m-0"><i class="bi bi-folder-symlink me-2 text-warning"></i>Daftar Pengajuan Izin & Cuti</h3>
+            <a href="/admin" class="btn btn-outline-secondary rounded-pill px-3 btn-sm">← Kembali ke Dashboard Admin</a>
+        </div>
+
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Nama Karyawan</th>
+                            <th>Jenis</th>
+                            <th>Mulai</th>
+                            <th>Selesai</th>
+                            <th>Alasan</th>
+                            <th>Status</th>
+                            <th class="text-center">Aksi Admin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (leaves.length > 0) { %>
+                            <% leaves.forEach(leave => { %>
+                                <tr>
+                                    <td class="fw-semibold"><%= leave.User ? leave.User.nama : 'Karyawan' %></td>
+                                    <td><span class="badge bg-secondary"><%= leave.jenis %></span></td>
+                                    <td><%= leave.tanggal_mulai %></td>
+                                    <td><%= leave.tanggal_selesai %></td>
+                                    <td class="text-muted"><%= leave.alasan %></td>
+                                    <td>
+                                        <% if(leave.status === 'Pending') { %>
+                                            <span class="badge bg-warning text-dark">Pending</span>
+                                        <% } else if(leave.status === 'Disetujui') { %>
+                                            <span class="badge bg-success">Disetujui</span>
+                                        <% } else { %>
+                                            <span class="badge bg-danger">Ditolak</span>
+                                        <% } %>
+                                    </td>
+                                    <td class="text-center">
+                                        <% if(leave.status === 'Pending') { %>
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <input type="hidden" name="user_id" value="2">
+                                                    <input type="hidden" name="statusAction" value="Disetujui">
+                                                    <button type="submit" class="btn btn-sm btn-success px-3 rounded-pill fw-semibold">Setuju</button>
+                                                </form>
+                                                <form action="/admin/leaves/<%= leave.id %>/action" method="POST">
+                                                    <input type="hidden" name="statusAction" value="Ditolak">
+                                                    <button type="submit" class="btn btn-sm btn-danger px-3 rounded-pill fw-semibold">Tolak</button>
+                                                </form>
+                                            </div>
+                                        <% } else { %>
+                                            <span class="text-muted small">Selesai diproses</span>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">Belum ada pengajuan izin masuk.</td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
