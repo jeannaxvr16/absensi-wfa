@@ -2,8 +2,9 @@ const express = require('express')
 const router = express.Router()
 const { Op } = require('sequelize') 
 
-const Attendance = require('../models/Attendance')
-const User = require('../models/User')
+// PERBAIKAN: Mengubah nama file import model menjadi huruf kecil sesuai case-sensitive Linux
+const Attendance = require('../models/attendance')
+const User = require('../models/user')
 const Leave = require('../models/Leave')
 
 // ==========================================

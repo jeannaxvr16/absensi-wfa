@@ -26,7 +26,7 @@ const User = sequelize.define('User', {
     },
 
     // ====================================================
-    // TIMPA DI SINI: TAMBAHAN KOLOM ROLE UNTUK MEMBEDAKAN HAK AKSES
+    // TAMBAHAN KOLOM ROLE UNTUK MEMBEDAKAN HAK AKSES
     // ====================================================
     role: {
         type: DataTypes.ENUM('admin', 'karyawan'),

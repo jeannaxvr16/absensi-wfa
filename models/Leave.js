@@ -1,8 +1,7 @@
 const { DataTypes } = require('sequelize')
 const sequelize = require('../config/db')
-const User = require('./User')
+const User = require('./user') // Sudah diubah ke 'u' kecil
 
-// PASTIKAN BARIS INI TULISANNYA SEPERTI INI:
 const Leave = sequelize.define('Leave', {
     jenis: {
         type: DataTypes.ENUM('Izin', 'Sakit', 'Cuti'),
