@@ -3,9 +3,9 @@ const express = require('express')
 const session = require('express-session')
 const path = require('path')
 const db = require('./config/db')
-const User = require('./models/User')
-const Attendance = require('./models/Attendance')
-const Leave = require('./models/Leave')
+const User = require('./models/user')
+const Attendance = require('./models/attendance')
+const Leave = require('./models/leave')
 
 // IMPOR ROUTE
 const authRoutes = require('./routes/authRoutes')
