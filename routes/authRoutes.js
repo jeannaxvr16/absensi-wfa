@@ -5,9 +5,10 @@ const bcrypt = require('bcryptjs')
 const { v4: uuidv4 } = require('uuid')
 const QRCode = require('qrcode')
 
-const User = require('../models/User')
-const Attendance = require('../models/Attendance')
-const Leave = require('../models/Leave')
+// PERBAIKAN: Mengubah nama file import model menjadi huruf kecil sesuai sistem Linux
+const User = require('../models/user')
+const Attendance = require('../models/attendance')
+const Leave = require('../models/leave')
 
 // ==========================================
 // 1. ROUTE REGISTER (PENDAFTARAN AKUN)
