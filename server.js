@@ -5,7 +5,7 @@ const path = require('path')
 const db = require('./config/db')
 const User = require('./models/user')
 const Attendance = require('./models/attendance')
-const Leave = require('./models/leave')
+const Leave = require('./models/Leave')
 
 // IMPOR ROUTE
 const authRoutes = require('./routes/authRoutes')
