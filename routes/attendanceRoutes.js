@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 const { Op } = require('sequelize') 
 
-// PERBAIKAN: Mengubah nama file import model menjadi huruf kecil sesuai case-sensitive Linux
+// Import model
 const Attendance = require('../models/attendance')
 const User = require('../models/user')
 const Leave = require('../models/leave')
@@ -34,17 +34,12 @@ router.post('/attendance', async (req, res) => {
 
         // --- KALKULASI KETERLAMBATAN ZONA WAKTU WIB (UTC + 7) ---
         const now = new Date();
-        // Konversi jam ke WIB
         const jamWIB = (now.getUTCHours() + 7) % 24;
         const menitWIB = now.getUTCMinutes();
         
         const shiftKaryawan = user.shift ? user.shift.toLowerCase() : 'pagi';
         let statusTeks = 'Tepat Waktu';
 
-        // Batas Atas Toleransi Jam Masuk:
-        // Shift Pagi  : Maksimal 09:00 WIB
-        // Shift Siang : Maksimal 14:00 WIB
-        // Shift Malam / Sore : Maksimal 22:00 WIB
         if (shiftKaryawan === 'pagi') {
             if (jamWIB > 9 || (jamWIB === 9 && menitWIB > 0)) statusTeks = 'Terlambat';
         } else if (shiftKaryawan === 'siang') {
@@ -58,14 +53,14 @@ router.post('/attendance', async (req, res) => {
             qr_token: req.body.qr_token,
             latitude: req.body.latitude,
             longitude: req.body.longitude,
-            statusTelat: statusTeks, // Menyimpan status keterlambatan langsung ke database
+            statusTelat: statusTeks,
             waktu: now
         })
 
         res.json({ message: 'Absensi berhasil', status: statusTeks })
 
     } catch (error) {
-        console.log(error)
+        console.error('Error proses absensi:', error)
         res.status(500).json({ message: 'Terjadi kesalahan server' })
     }
 })
@@ -74,6 +69,11 @@ router.post('/attendance', async (req, res) => {
 router.get('/dashboard/:id', async (req, res) => {
     try {
         const userId = req.params.id; 
+
+        const currentUser = await User.findByPk(userId);
+        if (!currentUser) {
+            return res.status(404).send('Karyawan tidak ditemukan');
+        }
 
         const attendances = await Attendance.findAll({
             where: { user_id: userId }, 
@@ -85,9 +85,23 @@ router.get('/dashboard/:id', async (req, res) => {
             order: [['createdAt', 'DESC']]
         });
 
-        res.render('dashboard', { attendances, leaves });
+        const renderData = { 
+            currentUser: currentUser.toJSON ? currentUser.toJSON() : currentUser,
+            user: req.session && req.session.user ? req.session.user : currentUser,
+            attendances, 
+            leaves 
+        };
+
+        // Otomatis mencoba render 'dashboard' atau 'karyawan/dashboard'
+        res.render('dashboard', renderData, (err, html) => {
+            if (err) {
+                return res.render('karyawan/dashboard', renderData);
+            }
+            res.send(html);
+        });
+
     } catch (error) {
-        console.error(error);
+        console.error("Error Dashboard Karyawan:", error);
         res.status(500).send('Gagal memuat dashboard karyawan');
     }
 });
@@ -96,7 +110,7 @@ router.get('/scan', async (req, res) => {
     try {
         res.render('scan')
     } catch (error) {
-        console.log(error)
+        console.error('Error scan:', error)
         res.status(500).send('Gagal memuat halaman scan')
     }
 })
@@ -107,7 +121,7 @@ router.get('/scan', async (req, res) => {
 router.get('/leave/new', (req, res) => {
     const loggedInUser = (req.session && req.session.user) ? req.session.user : {
         id: 1,
-        nama: "Aulia Adrinna Azzahra",
+        nama: "Karyawan",
         shift: "Pagi"
     };
 
@@ -126,7 +140,7 @@ router.post('/leave/store', async (req, res) => {
         })
         res.redirect('/dashboard/' + req.body.user_id); 
     } catch (error) {
-        console.log(error);
+        console.error('Error pengajuan izin:', error);
         res.status(500).send('Gagal memproses pengajuan izin');
     }
 })
@@ -140,9 +154,13 @@ router.get('/admin/leaves', async (req, res) => {
             include: [{ model: User }],
             order: [['createdAt', 'DESC']]
         });
-        res.render('admin-leaves', { leaves });
+        
+        res.render('admin/leaves', (err, html) => {
+            if (err) return res.render('admin-leaves', { leaves });
+            res.send(html);
+        });
     } catch (error) {
-        console.log(error);
+        console.error('Error admin leaves:', error);
         res.status(500).send('Gagal memuat data pengajuan izin');
     }
 })
@@ -156,7 +174,7 @@ router.post('/admin/leaves/:id/action', async (req, res) => {
         );
         res.redirect('/admin/leaves'); 
     } catch (error) {
-        console.log(error);
+        console.error('Error aksi izin:', error);
         res.status(500).send('Gagal memperbarui status pengajuan');
     }
 })
@@ -168,7 +186,7 @@ router.post('/admin/leaves/delete/:id', async (req, res) => {
         });
         res.redirect('/admin/leaves');
     } catch (error) {
-        console.error(error);
+        console.error('Error hapus izin:', error);
         res.status(500).send('Gagal menghapus data pengajuan');
     }
 });
@@ -187,21 +205,19 @@ router.get('/admin/qr-dinamis', async (req, res) => {
                     [Op.gte]: awalHariIni 
                 }
             },
-            include: [{
-                model: User 
-            }],
+            include: [{ model: User }],
             order: [['waktu', 'DESC']]
         });
 
         const qrData = "WFA_ATTENDANCE_SECRET_TOKEN_GENERATED"; 
 
-        res.render('admin-qr', { 
-            attendances: attendances, 
-            qrData: qrData 
+        res.render('admin/qr-dinamis', (err, html) => {
+            if (err) return res.render('admin-qr', { attendances, qrData });
+            res.send(html);
         });
 
     } catch (error) {
-        console.error("Error pada QR Dinamis:", error);
+        console.error("Error QR Dinamis:", error);
         res.status(500).send("Gagal memuat halaman QR Dinamis Admin");
     }
 });
@@ -214,7 +230,7 @@ router.get('/admin', async (req, res) => {
         const attendancesRaw = await Attendance.findAll({
             include: [{ model: User }], 
             order: [['waktu', 'DESC']]
-        })
+        }).catch(() => []);
 
         const users = await User.findAll().catch(() => []);
         
@@ -227,7 +243,7 @@ router.get('/admin', async (req, res) => {
 
         const totalShiftPagi = users.filter(u => u.shift && u.shift.toLowerCase() === 'pagi').length;
         const totalShiftSiang = users.filter(u => u.shift && u.shift.toLowerCase() === 'siang').length;
-        const totalShiftSore = users.filter(u => u.shift && u.shift.toLowerCase() === 'sore').length;
+        const totalShiftSore = users.filter(u => u.shift && (u.shift.toLowerCase() === 'sore' || u.shift.toLowerCase() === 'malam')).length;
 
         const attendances = attendancesRaw.map(att => {
             const data = att.toJSON ? att.toJSON() : att;
@@ -235,13 +251,11 @@ router.get('/admin', async (req, res) => {
             const shiftKaryawan = matchUser && matchUser.shift ? matchUser.shift.toLowerCase() : 'pagi';
             
             const waktuAbsen = new Date(data.waktu);
-            // Konversi ke jam WIB
             const jamWIB = (waktuAbsen.getUTCHours() + 7) % 24;
             const menitWIB = waktuAbsen.getUTCMinutes();
             
             let statusTeks = data.statusTelat || 'Tepat Waktu';
 
-            // Jika status belum tersimpan di DB, lakukan evaluasi ulang berdasar jam WIB
             if (!data.statusTelat) {
                 if (shiftKaryawan === 'pagi') {
                     if (jamWIB > 9 || (jamWIB === 9 && menitWIB > 0)) statusTeks = 'Terlambat';
@@ -261,7 +275,7 @@ router.get('/admin', async (req, res) => {
                 statusTelat: statusTeks,
                 User: matchUser ? (matchUser.toJSON ? matchUser.toJSON() : matchUser) : { nama: 'Karyawan' }
             }
-        })
+        });
 
         const stats = {
             totalKaryawan: users.length,
@@ -270,19 +284,25 @@ router.get('/admin', async (req, res) => {
             izinSakitCuti: pendingLeaves.length, 
             shiftPagi: totalShiftPagi,
             shiftSiang: totalShiftSiang,
-            shiftSore: totalShiftSore
-        }
+            shiftSore: totalShiftSore,
+            shiftMalam: totalShiftSore
+        };
 
-        res.render('admin/admin', { 
+        const renderPayload = { 
             attendances, 
             stats,
             user: (req.session && req.session.user) ? req.session.user : { nama: "Admin" }
-        })
+        };
+
+        res.render('admin/dashboard', renderPayload, (err, html) => {
+            if (err) return res.render('admin/admin', renderPayload);
+            res.send(html);
+        });
         
     } catch (error) {
-        console.log(error)
-        res.status(500).send('Gagal memuat dashboard admin')
+        console.error("Error Dashboard Admin:", error);
+        res.status(500).send('Gagal memuat dashboard admin');
     }
-})
+});
 
 module.exports = router;
