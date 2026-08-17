@@ -32,15 +32,37 @@ router.post('/attendance', async (req, res) => {
             }
         }
 
+        // --- KALKULASI KETERLAMBATAN ZONA WAKTU WIB (UTC + 7) ---
+        const now = new Date();
+        // Konversi jam ke WIB
+        const jamWIB = (now.getUTCHours() + 7) % 24;
+        const menitWIB = now.getUTCMinutes();
+        
+        const shiftKaryawan = user.shift ? user.shift.toLowerCase() : 'pagi';
+        let statusTeks = 'Tepat Waktu';
+
+        // Batas Atas Toleransi Jam Masuk:
+        // Shift Pagi  : Maksimal 09:00 WIB
+        // Shift Siang : Maksimal 14:00 WIB
+        // Shift Malam / Sore : Maksimal 22:00 WIB
+        if (shiftKaryawan === 'pagi') {
+            if (jamWIB > 9 || (jamWIB === 9 && menitWIB > 0)) statusTeks = 'Terlambat';
+        } else if (shiftKaryawan === 'siang') {
+            if (jamWIB > 14 || (jamWIB === 14 && menitWIB > 0)) statusTeks = 'Terlambat';
+        } else if (shiftKaryawan === 'sore' || shiftKaryawan === 'malam') {
+            if (jamWIB > 22 || (jamWIB === 22 && menitWIB > 0)) statusTeks = 'Terlambat';
+        }
+
         await Attendance.create({
             user_id: user.id,
             qr_token: req.body.qr_token,
             latitude: req.body.latitude,
             longitude: req.body.longitude,
-            waktu: new Date()
+            statusTelat: statusTeks, // Menyimpan status keterlambatan langsung ke database
+            waktu: now
         })
 
-        res.json({ message: 'Absensi berhasil' })
+        res.json({ message: 'Absensi berhasil', status: statusTeks })
 
     } catch (error) {
         console.log(error)
@@ -213,18 +235,21 @@ router.get('/admin', async (req, res) => {
             const shiftKaryawan = matchUser && matchUser.shift ? matchUser.shift.toLowerCase() : 'pagi';
             
             const waktuAbsen = new Date(data.waktu);
-            const jam = waktuAbsen.getHours();
-            const menit = waktuAbsen.getMinutes();
+            // Konversi ke jam WIB
+            const jamWIB = (waktuAbsen.getUTCHours() + 7) % 24;
+            const menitWIB = waktuAbsen.getUTCMinutes();
             
-            let statusTeks = 'Tepat Waktu';
+            let statusTeks = data.statusTelat || 'Tepat Waktu';
 
-            // Logika toleransi batas waktu jam masuk per shift
-            if (shiftKaryawan === 'pagi') {
-                if (jam > 8 || (jam === 8 && menit > 0)) statusTeks = 'Terlambat';
-            } else if (shiftKaryawan === 'siang') {
-                if (jam > 14 || (jam === 14 && menit > 0)) statusTeks = 'Terlambat';
-            } else if (shiftKaryawan === 'sore') {
-                if (jam > 22 || (jam === 22 && menit > 0)) statusTeks = 'Terlambat';
+            // Jika status belum tersimpan di DB, lakukan evaluasi ulang berdasar jam WIB
+            if (!data.statusTelat) {
+                if (shiftKaryawan === 'pagi') {
+                    if (jamWIB > 9 || (jamWIB === 9 && menitWIB > 0)) statusTeks = 'Terlambat';
+                } else if (shiftKaryawan === 'siang') {
+                    if (jamWIB > 14 || (jamWIB === 14 && menitWIB > 0)) statusTeks = 'Terlambat';
+                } else if (shiftKaryawan === 'sore' || shiftKaryawan === 'malam') {
+                    if (jamWIB > 22 || (jamWIB === 22 && menitWIB > 0)) statusTeks = 'Terlambat';
+                }
             }
             
             if (statusTeks === 'Terlambat' && waktuAbsen.toDateString() === hariIniTeks) {

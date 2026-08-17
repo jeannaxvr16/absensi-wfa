@@ -32,7 +32,7 @@ router.get('/', async (req, res) => {
     try {
         const totalKaryawan = await User.count({ where: { role: 'karyawan' } });
         
-        // Ambil semua data absensi, lalu filter khusus hari ini
+        // Ambil semua data absensi, lalu filter khusus hari ini untuk ringkasan Dashboard
         const allAttendances = await Attendance.findAll({
             include: [{ model: User }],
             order: [['waktu', 'DESC']]
@@ -127,19 +127,17 @@ router.post('/users/add', async (req, res) => {
     }
 });
 
-// 3. LAPORAN (REPORTS)
+// 3. LAPORAN (REPORTS) - DIUBAH: Menampilkan SELURUH RIWAYAT tanpa filter isToday
 router.get('/reports', async (req, res) => {
     try {
-        const allAttendances = await Attendance.findAll({
+        const attendances = await Attendance.findAll({
             include: [{ model: User }],
             order: [['waktu', 'DESC']]
         });
 
-        const attendances = allAttendances.filter(item => isToday(item.waktu));
-
         res.render('admin/reports', {
             user: req.session.user,
-            attendances
+            attendances // Mengirim seluruh riwayat data absensi
         });
     } catch (error) {
         console.error('Error Laporan:', error);
