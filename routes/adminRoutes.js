@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs'); // Dipakai untuk hash password user baru
+const bcrypt = require('bcryptjs'); // Dipakai untuk hash password user
 const { Op } = require('sequelize');
 
 // PERBAIKAN: Mengubah nama file import model menjadi huruf kecil sesuai Linux
@@ -127,7 +127,63 @@ router.post('/users/add', async (req, res) => {
     }
 });
 
-// 3. LAPORAN (REPORTS) - DIUBAH: Menampilkan SELURUH RIWAYAT tanpa filter isToday
+// 2.2 EDIT DATA KARYAWAN (POST)
+router.post('/users/edit/:id', async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const { nama, email, password, role, shift } = req.body;
+
+        const user = await User.findByPk(userId);
+        if (!user) {
+            return res.status(404).send('Karyawan tidak ditemukan');
+        }
+
+        const updateData = {
+            nama,
+            email,
+            role: role || user.role,
+            shift: shift || user.shift
+        };
+
+        // Update password hanya jika diisi oleh admin
+        if (password && password.trim() !== '') {
+            updateData.password = await bcrypt.hash(password, 10);
+        }
+
+        await User.update(updateData, { where: { id: userId } });
+
+        res.redirect('/admin/master-data');
+    } catch (error) {
+        console.error('Error Edit User:', error);
+        res.status(500).send('Gagal memperbarui data karyawan');
+    }
+});
+
+// 2.3 HAPUS DATA KARYAWAN (POST)
+router.post('/users/delete/:id', async (req, res) => {
+    try {
+        const userId = req.params.id;
+
+        // Mencegah admin menghapus akunnya sendiri
+        if (req.session.user && req.session.user.id == userId) {
+            return res.status(400).send('Anda tidak bisa menghapus akun Anda sendiri.');
+        }
+
+        // Hapus data riwayat absensi dan izin terlebih dahulu ( Foreign Key Constraint )
+        await Attendance.destroy({ where: { user_id: userId } });
+        await Leave.destroy({ where: { user_id: userId } });
+
+        // Hapus data user dari database
+        await User.destroy({ where: { id: userId } });
+
+        res.redirect('/admin/master-data');
+    } catch (error) {
+        console.error('Error Hapus User:', error);
+        res.status(500).send('Gagal menghapus data karyawan');
+    }
+});
+
+// 3. LAPORAN (REPORTS)
 router.get('/reports', async (req, res) => {
     try {
         const attendances = await Attendance.findAll({
@@ -137,7 +193,7 @@ router.get('/reports', async (req, res) => {
 
         res.render('admin/reports', {
             user: req.session.user,
-            attendances // Mengirim seluruh riwayat data absensi
+            attendances
         });
     } catch (error) {
         console.error('Error Laporan:', error);
