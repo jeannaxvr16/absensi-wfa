@@ -214,14 +214,64 @@
                                         </td>
                                         <td><%= item.shift || 'Pagi' %></td>
                                         <td class="text-center">
-                                            <button class="btn btn-sm btn-outline-warning me-1" title="Edit">
+                                            <!-- Tombol Trigger Modal Edit -->
+                                            <button class="btn btn-sm btn-outline-warning me-1" title="Edit" data-bs-toggle="modal" data-bs-target="#modalEdit<%= item.id %>">
                                                 <i class="bi bi-pencil-square"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-outline-danger" title="Hapus">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+
+                                            <!-- Form Hapus Karyawan -->
+                                            <form action="/admin/users/delete/<%= item.id %>" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus <%= item.nama %>?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
                                         </td>
                                     </tr>
+
+                                    <!-- Modal Edit Karyawan (Satu Modal Per Karyawan) -->
+                                    <div class="modal fade" id="modalEdit<%= item.id %>" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content border-0 shadow">
+                                                <div class="modal-header border-0 pb-0">
+                                                    <h5 class="modal-title fw-bold">Edit Data Karyawan</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <form action="/admin/users/edit/<%= item.id %>" method="POST">
+                                                    <div class="modal-body">
+                                                        <div class="mb-3 text-start">
+                                                            <label class="form-label small fw-semibold">Nama Lengkap</label>
+                                                            <input type="text" name="nama" class="form-control" value="<%= item.nama %>" required>
+                                                        </div>
+                                                        <div class="mb-3 text-start">
+                                                            <label class="form-label small fw-semibold">Email</label>
+                                                            <input type="email" name="email" class="form-control" value="<%= item.email %>" required>
+                                                        </div>
+                                                        <div class="row text-start">
+                                                            <div class="col-md-6 mb-3">
+                                                                <label class="form-label small fw-semibold">Role</label>
+                                                                <select name="role" class="form-select">
+                                                                    <option value="karyawan" <%= item.role === 'karyawan' ? 'selected' : '' %>>Karyawan</option>
+                                                                    <option value="admin" <%= item.role === 'admin' ? 'selected' : '' %>>Admin</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-md-6 mb-3">
+                                                                <label class="form-label small fw-semibold">Shift Kerja</label>
+                                                                <select name="shift" class="form-select">
+                                                                    <option value="Pagi" <%= item.shift === 'Pagi' ? 'selected' : '' %>>Pagi</option>
+                                                                    <option value="Siang" <%= item.shift === 'Siang' ? 'selected' : '' %>>Siang</option>
+                                                                    <option value="Malam" <%= item.shift === 'Malam' ? 'selected' : '' %>>Malam</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer border-0 pt-0">
+                                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                                                        <button type="submit" class="btn btn-primary-custom">Simpan Perubahan</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
                                 <% }) %>
                             <% } else { %>
                                 <tr>

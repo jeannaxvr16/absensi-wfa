@@ -28,7 +28,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <% if (leaves.length > 0) { %>
+                        <% if (leaves && leaves.length > 0) { %>
                             <% leaves.forEach(leave => { %>
                                 <tr>
                                     <td class="fw-semibold"><%= leave.User ? leave.User.nama : 'Karyawan' %></td>
@@ -39,7 +39,7 @@
                                     <td>
                                         <% if(leave.status === 'Pending') { %>
                                             <span class="badge bg-warning text-dark">Pending</span>
-                                        <% } else if(leave.status === 'Disetujui') { %>
+                                        <% } else if(leave.status === 'Disetujui' || leave.status === 'Approved') { %>
                                             <span class="badge bg-success">Disetujui</span>
                                         <% } else { %>
                                             <span class="badge bg-danger">Ditolak</span>
@@ -48,10 +48,13 @@
                                     <td class="text-center">
                                         <% if(leave.status === 'Pending') { %>
                                             <div class="d-flex justify-content-center gap-2">
-                                                <input type="hidden" name="user_id" value="2">
+                                                <!-- Form Setuju -->
+                                                <form action="/admin/leaves/<%= leave.id %>/action" method="POST">
                                                     <input type="hidden" name="statusAction" value="Disetujui">
                                                     <button type="submit" class="btn btn-sm btn-success px-3 rounded-pill fw-semibold">Setuju</button>
                                                 </form>
+
+                                                <!-- Form Tolak -->
                                                 <form action="/admin/leaves/<%= leave.id %>/action" method="POST">
                                                     <input type="hidden" name="statusAction" value="Ditolak">
                                                     <button type="submit" class="btn btn-sm btn-danger px-3 rounded-pill fw-semibold">Tolak</button>

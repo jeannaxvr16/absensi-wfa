@@ -3,7 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs'); // Dipakai untuk hash password user
 const { Op } = require('sequelize');
 
-// PERBAIKAN: Mengubah nama file import model menjadi huruf kecil sesuai Linux
+// Import model
 const User = require('../models/user'); 
 const Attendance = require('../models/attendance'); 
 const Leave = require('../models/leave'); 
@@ -216,13 +216,32 @@ router.get('/leaves', async (req, res) => {
             order: [['createdAt', 'DESC']]
         });
 
-        res.render('admin/leaves', {
+        // Mengarahkan ke file views/admin/admin-leaves.ejs
+        res.render('admin/admin-leaves', {
             user: req.session.user,
             leaves
         });
     } catch (error) {
         console.error('Error Leaves:', error);
         res.status(500).send('Gagal memuat data izin/cuti');
+    }
+});
+
+// 5.1 PROSES AKSI SETUJU / TOLAK IZIN (POST)
+router.post('/leaves/:id/action', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { statusAction } = req.body; // Mengambil nilai 'Disetujui' / 'Ditolak'
+
+        await Leave.update(
+            { status: statusAction },
+            { where: { id: id } }
+        );
+
+        res.redirect('/admin/leaves');
+    } catch (error) {
+        console.error('Error Action Leave:', error);
+        res.status(500).send('Gagal memproses aksi pengajuan izin');
     }
 });
 
