@@ -8,6 +8,51 @@ const User = require('../models/user')
 const Leave = require('../models/leave')
 
 // ==========================================
+// FUNGSI BANTUAN LOGIKA KETERLAMBATAN SHIFT
+// ==========================================
+function hitungStatusKeterlambatan(waktuAbsen, shiftUser) {
+    // Konversi waktu ke zona Asia/Jakarta (WIB)
+    const options = { timeZone: 'Asia/Jakarta', hour12: false, hour: '2-digit', minute: '2-digit' };
+    const waktuWIBString = new Date(waktuAbsen).toLocaleTimeString('en-US', options);
+    
+    const [jamStr, menitStr] = waktuWIBString.split(':');
+    const jamWIB = parseInt(jamStr, 10);
+    const menitWIB = parseInt(menitStr, 10);
+    const totalMenitAbsen = (jamWIB * 60) + menitWIB; // Total menit dari jam 00:00
+
+    const shift = (shiftUser || 'pagi').toLowerCase();
+
+    // SHIFT PAGI (08:00 - 13:00) -> Batas Tepat Waktu max 08:00
+    if (shift === 'pagi') {
+        const batasMasuk = 8 * 60; // 08:00 (480 menit)
+        if (totalMenitAbsen > batasMasuk && totalMenitAbsen < (13 * 60)) {
+            return 'Terlambat';
+        } else if (totalMenitAbsen >= (13 * 60) || totalMenitAbsen < (5 * 60)) {
+            return 'Terlambat'; // Absen siang/malam/dini hari dianggap Terlambat Shift Pagi
+        }
+    } 
+    // SHIFT SIANG (13:00 - 21:00) -> Batas Tepat Waktu max 13:00
+    else if (shift === 'siang') {
+        const batasMasuk = 13 * 60; // 13:00 (780 menit)
+        if (totalMenitAbsen > batasMasuk && totalMenitAbsen < (21 * 60)) {
+            return 'Terlambat';
+        } else if (totalMenitAbsen >= (21 * 60) || totalMenitAbsen < (13 * 60)) {
+            return 'Terlambat'; // Absen dini hari (misal 01:22) / pagi dianggap Terlambat Shift Siang
+        }
+    } 
+    // SHIFT SORE / MALAM (21:00 - 05:00) -> Batas Tepat Waktu max 21:00
+    else if (shift === 'sore' || shift === 'malam') {
+        const batasMasuk = 21 * 60; // 21:00 (1260 menit)
+        // Jika absen antara 21:01 s/d 23:59 ATAU 00:00 s/d 05:00 dini hari
+        if (totalMenitAbsen > batasMasuk || totalMenitAbsen < (5 * 60)) {
+            return 'Terlambat';
+        }
+    }
+
+    return 'Tepat Waktu';
+}
+
+// ==========================================
 // 1. JALUR PROSES ABSENSI QR (POST & GET)
 // ==========================================
 router.post('/attendance', async (req, res) => {
@@ -32,21 +77,8 @@ router.post('/attendance', async (req, res) => {
             }
         }
 
-        // --- KALKULASI KETERLAMBATAN ZONA WAKTU WIB (UTC + 7) ---
         const now = new Date();
-        const jamWIB = (now.getUTCHours() + 7) % 24;
-        const menitWIB = now.getUTCMinutes();
-        
-        const shiftKaryawan = user.shift ? user.shift.toLowerCase() : 'pagi';
-        let statusTeks = 'Tepat Waktu';
-
-        if (shiftKaryawan === 'pagi') {
-            if (jamWIB > 9 || (jamWIB === 9 && menitWIB > 0)) statusTeks = 'Terlambat';
-        } else if (shiftKaryawan === 'siang') {
-            if (jamWIB > 14 || (jamWIB === 14 && menitWIB > 0)) statusTeks = 'Terlambat';
-        } else if (shiftKaryawan === 'sore' || shiftKaryawan === 'malam') {
-            if (jamWIB > 22 || (jamWIB === 22 && menitWIB > 0)) statusTeks = 'Terlambat';
-        }
+        const statusTeks = hitungStatusKeterlambatan(now, user.shift);
 
         await Attendance.create({
             user_id: user.id,
@@ -92,7 +124,6 @@ router.get('/dashboard/:id', async (req, res) => {
             leaves 
         };
 
-        // Otomatis mencoba render 'dashboard' atau 'karyawan/dashboard'
         res.render('dashboard', renderData, (err, html) => {
             if (err) {
                 return res.render('karyawan/dashboard', renderData);
@@ -248,25 +279,12 @@ router.get('/admin', async (req, res) => {
         const attendances = attendancesRaw.map(att => {
             const data = att.toJSON ? att.toJSON() : att;
             const matchUser = data.User || users.find(u => u.id === data.user_id);
-            const shiftKaryawan = matchUser && matchUser.shift ? matchUser.shift.toLowerCase() : 'pagi';
+            const shiftKaryawan = matchUser && matchUser.shift ? matchUser.shift : 'pagi';
             
-            const waktuAbsen = new Date(data.waktu);
-            const jamWIB = (waktuAbsen.getUTCHours() + 7) % 24;
-            const menitWIB = waktuAbsen.getUTCMinutes();
+            // Evaluasi keterlambatan secara konsisten
+            const statusTeks = hitungStatusKeterlambatan(data.waktu, shiftKaryawan);
             
-            let statusTeks = data.statusTelat || 'Tepat Waktu';
-
-            if (!data.statusTelat) {
-                if (shiftKaryawan === 'pagi') {
-                    if (jamWIB > 9 || (jamWIB === 9 && menitWIB > 0)) statusTeks = 'Terlambat';
-                } else if (shiftKaryawan === 'siang') {
-                    if (jamWIB > 14 || (jamWIB === 14 && menitWIB > 0)) statusTeks = 'Terlambat';
-                } else if (shiftKaryawan === 'sore' || shiftKaryawan === 'malam') {
-                    if (jamWIB > 22 || (jamWIB === 22 && menitWIB > 0)) statusTeks = 'Terlambat';
-                }
-            }
-            
-            if (statusTeks === 'Terlambat' && waktuAbsen.toDateString() === hariIniTeks) {
+            if (statusTeks === 'Terlambat' && new Date(data.waktu).toDateString() === hariIniTeks) {
                 jumlahTerlambatHariIni++;
             }
 
