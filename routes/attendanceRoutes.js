@@ -11,42 +11,64 @@ const Leave = require('../models/leave')
 // FUNGSI BANTUAN LOGIKA KETERLAMBATAN SHIFT
 // ==========================================
 function hitungStatusKeterlambatan(waktuAbsen, shiftUser) {
-    // Konversi waktu ke zona Asia/Jakarta (WIB)
-    const options = { timeZone: 'Asia/Jakarta', hour12: false, hour: '2-digit', minute: '2-digit' };
-    const waktuWIBString = new Date(waktuAbsen).toLocaleTimeString('en-US', options);
+    // Konversi tanggal ke Zona Waktu Asia/Jakarta (WIB)
+    const dateObj = new Date(waktuAbsen);
+    const formatter = new Intl.DateTimeFormat('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false
+    });
     
-    const [jamStr, menitStr] = waktuWIBString.split(':');
-    const jamWIB = parseInt(jamStr, 10);
-    const menitWIB = parseInt(menitStr, 10);
-    const totalMenitAbsen = (jamWIB * 60) + menitWIB; // Total menit dari jam 00:00
+    const formattedParts = formatter.formatToParts(dateObj);
+    let jamWIB = 0;
+    let menitWIB = 0;
 
+    formattedParts.forEach(part => {
+        if (part.type === 'hour') jamWIB = parseInt(part.value, 10);
+        if (part.type === 'minute') menitWIB = parseInt(part.value, 10);
+    });
+
+    // Handle bug format 24 jam pada id-ID (kadang menghasilkan jam 24)
+    if (jamWIB === 24) jamWIB = 0;
+
+    const totalMenitAbsen = (jamWIB * 60) + menitWIB; // Total menit dalam sehari (0 - 1439)
     const shift = (shiftUser || 'pagi').toLowerCase();
 
-    // SHIFT PAGI (08:00 - 13:00) -> Batas Tepat Waktu max 08:00
+    // 1. SHIFT PAGI (08:00 - 13:00)
+    // Tepat Waktu: Jam 05:00 s.d 08:00 (300 s.d 480 menit)
     if (shift === 'pagi') {
-        const batasMasuk = 8 * 60; // 08:00 (480 menit)
-        if (totalMenitAbsen > batasMasuk && totalMenitAbsen < (13 * 60)) {
-            return 'Terlambat';
-        } else if (totalMenitAbsen >= (13 * 60) || totalMenitAbsen < (5 * 60)) {
-            return 'Terlambat'; // Absen siang/malam/dini hari dianggap Terlambat Shift Pagi
+        const jamBukaAbsen = 5 * 60;  // 05:00
+        const jamBatasMasuk = 8 * 60; // 08:00
+        
+        if (totalMenitAbsen >= jamBukaAbsen && totalMenitAbsen <= jamBatasMasuk) {
+            return 'Tepat Waktu';
         }
+        return 'Terlambat';
     } 
-    // SHIFT SIANG (13:00 - 21:00) -> Batas Tepat Waktu max 13:00
+    
+    // 2. SHIFT SIANG (13:00 - 21:00)
+    // Tepat Waktu: Jam 11:00 s.d 13:00 (660 s.d 780 menit)
     else if (shift === 'siang') {
-        const batasMasuk = 13 * 60; // 13:00 (780 menit)
-        if (totalMenitAbsen > batasMasuk && totalMenitAbsen < (21 * 60)) {
-            return 'Terlambat';
-        } else if (totalMenitAbsen >= (21 * 60) || totalMenitAbsen < (13 * 60)) {
-            return 'Terlambat'; // Absen dini hari (misal 01:22) / pagi dianggap Terlambat Shift Siang
+        const jamBukaAbsen = 11 * 60;  // 11:00
+        const jamBatasMasuk = 13 * 60; // 13:00
+
+        if (totalMenitAbsen >= jamBukaAbsen && totalMenitAbsen <= jamBatasMasuk) {
+            return 'Tepat Waktu';
         }
+        return 'Terlambat';
     } 
-    // SHIFT SORE / MALAM (21:00 - 05:00) -> Batas Tepat Waktu max 21:00
+    
+    // 3. SHIFT SORE / MALAM (21:00 - 05:00)
+    // Tepat Waktu: Jam 19:00 s.d 21:00 (1140 s.d 1260 menit)
     else if (shift === 'sore' || shift === 'malam') {
-        const batasMasuk = 21 * 60; // 21:00 (1260 menit)
-        // Jika absen antara 21:01 s/d 23:59 ATAU 00:00 s/d 05:00 dini hari
-        if (totalMenitAbsen > batasMasuk || totalMenitAbsen < (5 * 60)) {
-            return 'Terlambat';
+        const jamBukaAbsen = 19 * 60;  // 19:00
+        const jamBatasMasuk = 21 * 60; // 21:00
+
+        if (totalMenitAbsen >= jamBukaAbsen && totalMenitAbsen <= jamBatasMasuk) {
+            return 'Tepat Waktu';
         }
+        return 'Terlambat';
     }
 
     return 'Tepat Waktu';
@@ -281,7 +303,7 @@ router.get('/admin', async (req, res) => {
             const matchUser = data.User || users.find(u => u.id === data.user_id);
             const shiftKaryawan = matchUser && matchUser.shift ? matchUser.shift : 'pagi';
             
-            // Evaluasi keterlambatan secara konsisten
+            // Evaluasi keterlambatan menggunakan fungsi bantuan yang sama
             const statusTeks = hitungStatusKeterlambatan(data.waktu, shiftKaryawan);
             
             if (statusTeks === 'Terlambat' && new Date(data.waktu).toDateString() === hariIniTeks) {

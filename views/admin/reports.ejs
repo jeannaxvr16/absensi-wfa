@@ -166,10 +166,32 @@
         </header>
 
         <main class="content-body">
+            
+            <!-- FORM FILTER RENTANG TANGGAL LAPORAN -->
+            <div class="grid-card mb-4">
+                <form method="GET" action="/admin/reports" class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-secondary small mb-1">Dari Tanggal:</label>
+                        <input type="date" name="startDate" class="form-control" value="<%= typeof startDate !== 'undefined' ? startDate : '' %>">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-secondary small mb-1">Sampai Tanggal:</label>
+                        <input type="date" name="endDate" class="form-control" value="<%= typeof endDate !== 'undefined' ? endDate : '' %>">
+                    </div>
+                    <div class="col-md-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary w-100 fw-semibold" style="background-color: var(--primary-green); border: none;">
+                            <i class="bi bi-filter me-1"></i> Filter Data
+                        </button>
+                        <a href="/admin/reports" class="btn btn-light border w-100 fw-semibold">Reset</a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TABEL HASIL REKAP LAPORAN -->
             <div class="grid-card">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <div>
-                        <h6 class="fw-bold m-0"><i class="bi bi-table me-2"></i>Riwayat Kehadiran Hari Ini</h6>
+                        <h6 class="fw-bold m-0"><i class="bi bi-table me-2"></i>Riwayat Kehadiran Karyawan</h6>
                         <small class="text-muted"><%= new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></small>
                     </div>
                     <button class="btn btn-sm btn-outline-success" onclick="window.print()">
@@ -194,46 +216,24 @@
                                     <tr>
                                         <td><%= index + 1 %></td>
                                         <td class="fw-semibold"><%= item.User ? item.User.nama : 'N/A' %></td>
-                                        <td><%= item.waktu %> WIB</td>
+                                        <td>
+                                            <div class="fw-semibold">
+                                                <%= new Date(item.waktu).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) %>
+                                            </div>
+                                            <small class="text-muted">
+                                                <i class="bi bi-clock me-1"></i><%= new Date(item.waktu).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' }) %> WIB
+                                            </small>
+                                        </td>
                                         <td>
                                             <% 
-                                                // Ambil nilai status dari database (statusTelat atau status)
                                                 const rawStatus = (item.statusTelat || item.status || '').toString().trim().toLowerCase();
                                                 let isLate = false;
 
-                                                // JIKA DB MEMILIKI DATA STATUS: Menggunakan status asli dari DB
                                                 if (rawStatus !== '') {
                                                     if (rawStatus.includes('terlambat') || rawStatus.includes('late')) {
                                                         isLate = true;
                                                     } else {
-                                                        isLate = false; // Jika bernilai "Tepat Waktu", dipaksa false
-                                                    }
-                                                } else {
-                                                    // HANYA JIKA DB KOSONG: Lakukan kalkulasi manual cadangan
-                                                    let scanHour = 0;
-                                                    let scanMinute = 0;
-
-                                                    if (typeof item.waktu === 'string' && (item.waktu.includes(':') || item.waktu.includes('.'))) {
-                                                        const timePart = item.waktu.split(',')[1] || item.waktu;
-                                                        const separator = timePart.includes(':') ? ':' : '.';
-                                                        const [h, m] = timePart.trim().split(separator);
-                                                        scanHour = parseInt(h, 10) || 0;
-                                                        scanMinute = parseInt(m, 10) || 0;
-                                                    } else {
-                                                        const d = new Date(item.waktu);
-                                                        scanHour = d.getHours();
-                                                        scanMinute = d.getMinutes();
-                                                    }
-
-                                                    const totalScanMinutes = (scanHour * 60) + scanMinute;
-                                                    const shift = item.User && item.User.shift ? item.User.shift : 'Pagi';
-                                                    let maxAllowedMinutes = 8 * 60; // Pagi
-
-                                                    if (shift === 'Siang') maxAllowedMinutes = 13 * 60;
-                                                    if (shift === 'Sore' || shift === 'Malam') maxAllowedMinutes = 23 * 60; 
-
-                                                    if (totalScanMinutes > maxAllowedMinutes) {
-                                                        isLate = true;
+                                                        isLate = false;
                                                     }
                                                 }
                                             %>
@@ -244,12 +244,14 @@
                                                 <span class="badge bg-success">Tepat Waktu</span>
                                             <% } %>
                                         </td>
-                                        <td class="small text-muted"><%= item.latitude || '-' %>, <%= item.longitude || '-' %></td>
+                                        <td class="small text-muted">
+                                            <i class="bi bi-geo-alt text-danger me-1"></i><%= item.latitude || '-' %>, <%= item.longitude || '-' %>
+                                        </td>
                                     </tr>
                                 <% }) %>
                             <% } else { %>
                                 <tr>
-                                    <td colspan="5" class="text-center text-muted py-4">Belum ada data laporan absensi untuk hari ini.</td>
+                                    <td colspan="5" class="text-center text-muted py-4">Belum ada data laporan absensi untuk kriteria ini.</td>
                                 </tr>
                             <% } %>
                         </tbody>

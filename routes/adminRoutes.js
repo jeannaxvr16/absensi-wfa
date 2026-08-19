@@ -17,14 +17,17 @@ const isAdmin = (req, res, next) => {
 
 router.use(isAdmin);
 
-// Fungsi bantu untuk mengecek apakah suatu tanggal adalah hari ini
+// Fungsi bantu mengecek apakah suatu tanggal berada di hari ini (Sesuai Zona Waktu Asia/Jakarta)
 const isToday = (dateString) => {
     if (!dateString) return false;
     const d = new Date(dateString);
     const today = new Date();
-    return d.getDate() === today.getDate() &&
-           d.getMonth() === today.getMonth() &&
-           d.getFullYear() === today.getFullYear();
+
+    const options = { timeZone: 'Asia/Jakarta', year: 'numeric', month: 'numeric', day: 'numeric' };
+    const dateStr = d.toLocaleDateString('id-ID', options);
+    const todayStr = today.toLocaleDateString('id-ID', options);
+
+    return dateStr === todayStr;
 };
 
 // 1. DASHBOARD ADMIN
@@ -169,7 +172,7 @@ router.post('/users/delete/:id', async (req, res) => {
             return res.status(400).send('Anda tidak bisa menghapus akun Anda sendiri.');
         }
 
-        // Hapus data riwayat absensi dan izin terlebih dahulu ( Foreign Key Constraint )
+        // Hapus data riwayat absensi dan izin terlebih dahulu (Foreign Key Constraint)
         await Attendance.destroy({ where: { user_id: userId } });
         await Leave.destroy({ where: { user_id: userId } });
 
@@ -183,17 +186,33 @@ router.post('/users/delete/:id', async (req, res) => {
     }
 });
 
-// 3. LAPORAN (REPORTS)
+// 3. LAPORAN (REPORTS) DENGAN FITUR FILTER TANGGAL
 router.get('/reports', async (req, res) => {
     try {
+        const { startDate, endDate } = req.query;
+        let whereCondition = {};
+
+        // Jika admin memasukkan filter tanggal
+        if (startDate && endDate) {
+            whereCondition.waktu = {
+                [Op.between]: [
+                    new Date(`${startDate}T00:00:00.000+07:00`), 
+                    new Date(`${endDate}T23:59:59.999+07:00`)
+                ]
+            };
+        }
+
         const attendances = await Attendance.findAll({
+            where: whereCondition,
             include: [{ model: User }],
             order: [['waktu', 'DESC']]
         });
 
         res.render('admin/reports', {
             user: req.session.user,
-            attendances
+            attendances,
+            startDate: startDate || '',
+            endDate: endDate || ''
         });
     } catch (error) {
         console.error('Error Laporan:', error);
@@ -216,7 +235,6 @@ router.get('/leaves', async (req, res) => {
             order: [['createdAt', 'DESC']]
         });
 
-        // Mengarahkan ke file views/admin/admin-leaves.ejs
         res.render('admin/admin-leaves', {
             user: req.session.user,
             leaves
