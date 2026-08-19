@@ -83,6 +83,58 @@ router.get('/', async (req, res) => {
     }
 });
 
+// 1.1 API SEARCH KARYAWAN UNTUK NAVBAR
+router.get('/users/search', async (req, res) => {
+    try {
+        const query = req.query.q || '';
+        if (!query.trim()) {
+            return res.json([]);
+        }
+
+        const users = await User.findAll({
+            where: {
+                role: 'karyawan',
+                [Op.or]: [
+                    { nama: { [Op.like]: `%${query}%` } },
+                    { email: { [Op.like]: `%${query}%` } }
+                ]
+            },
+            limit: 5
+        });
+
+        res.json(users);
+    } catch (error) {
+        console.error('Error Search User API:', error);
+        res.status(500).json({ error: 'Gagal mencari data karyawan' });
+    }
+});
+
+// 1.2 EDIT PROFIL ADMIN DARI MODAL NAVBAR
+router.post('/profile/update', async (req, res) => {
+    try {
+        const adminId = req.session.user.id;
+        const { nama, email, password } = req.body;
+
+        const updateData = { nama, email };
+
+        // Update password jika diisi oleh admin
+        if (password && password.trim() !== '') {
+            updateData.password = await bcrypt.hash(password, 10);
+        }
+
+        await User.update(updateData, { where: { id: adminId } });
+
+        // Update data session login secara live
+        req.session.user.nama = nama;
+        req.session.user.email = email;
+
+        res.redirect('/admin');
+    } catch (error) {
+        console.error('Error Update Profil Admin:', error);
+        res.status(500).send('Gagal memperbarui profil admin');
+    }
+});
+
 // 2. MASTER DATA (GET)
 router.get('/master-data', async (req, res) => {
     try {

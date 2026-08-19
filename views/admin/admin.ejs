@@ -262,24 +262,38 @@
     <div class="main-content">
         
         <header class="top-navbar">
-            <div class="search-bar">
+            <!-- FITUR LIVE SEARCH KARYAWAN -->
+            <div class="search-bar position-relative">
                 <i class="bi bi-search"></i>
-                <input type="text" placeholder="Search...">
+                <input type="text" id="searchInput" placeholder="Cari nama karyawan..." onkeyup="searchKaryawan()" autocomplete="off">
+                <div id="searchResults" class="list-group position-absolute w-100 shadow-lg mt-1 d-none" style="z-index: 1050; max-height: 250px; overflow-y: auto;"></div>
             </div>
+
             <div class="d-flex align-items-center gap-3">
                 <i class="bi bi-bell fs-5 text-secondary cursor-pointer"></i>
                 <i class="bi bi-envelope fs-5 text-secondary cursor-pointer"></i>
                 
+                <!-- DROPDOWN PROFIL ADMIN -->
                 <div class="dropdown border-start ps-3">
                     <div class="d-flex align-items-center gap-2" id="adminDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
-                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 35px; height: 35px; font-size: 0.85rem; background-color: var(--primary-green) !important;">A</div>
-                        <span class="fw-semibold small">Admin</span>
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 35px; height: 35px; font-size: 0.85rem; background-color: var(--primary-green) !important;">
+                            <%= user && user.nama ? user.nama.charAt(0).toUpperCase() : 'A' %>
+                        </div>
+                        <span class="fw-semibold small"><%= user && user.nama ? user.nama : 'Admin' %></span>
                         <i class="bi bi-chevron-down small text-secondary"></i>
                     </div>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm mt-2 border-0 rounded-3">
-                        <li><a class="dropdown-item small px-3 py-2 text-dark" href="#"><i class="bi bi-person me-2"></i>Profil Saya</a></li>
+                        <li>
+                            <a class="dropdown-item small px-3 py-2 text-dark" href="#" data-bs-toggle="modal" data-bs-target="#modalEditProfil">
+                                <i class="bi bi-person me-2 text-primary"></i>Profil Saya
+                            </a>
+                        </li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item small px-3 py-2 text-danger fw-semibold" href="/logout"><i class="bi bi-box-arrow-right me-2"></i>Keluar</a></li>
+                        <li>
+                            <a class="dropdown-item small px-3 py-2 text-danger fw-semibold" href="/logout">
+                                <i class="bi bi-box-arrow-right me-2"></i>Keluar
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -289,7 +303,7 @@
             
             <div class="card welcome-card shadow-sm">
                 <div>
-                    <h4 class="fw-bold mb-1">Halo, Admin!</h4>
+                    <h4 class="fw-bold mb-1">Halo, <%= user && user.nama ? user.nama : 'Admin' %>!</h4>
                     <p class="mb-0 opacity-90 small">Selamat datang di dashboard admin. Pantau kehadiran karyawan hari ini.</p>
                 </div>
                 <i class="bi bi-emoji-smile fs-1 opacity-75 d-none d-md-block"></i>
@@ -384,7 +398,6 @@
                             <div class="small fw-semibold"><i class="bi bi-brightness-high text-danger me-2"></i>Shift Siang</div>
                             <span class="fw-bold small text-dark"><%= stats.shiftSiang %> Karyawan</span>
                         </div>
-                        <!-- PERBAIKAN DI SINI: SHIFT MALAM -->
                         <div class="shift-row">
                             <div class="small fw-semibold"><i class="bi bi-moon-stars text-primary me-2"></i>Shift Malam</div>
                             <span class="fw-bold small text-dark"><%= stats.shiftMalam || stats.shiftSore %> Karyawan</span>
@@ -426,6 +439,38 @@
         </footer>
     </div>
 
+    <!-- MODAL EDIT PROFIL ADMIN -->
+    <div class="modal fade" id="modalEditProfil" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-person-gear me-2"></i>Edit Profil Admin</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="/admin/profile/update" method="POST">
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Nama Lengkap</label>
+                            <input type="text" name="nama" class="form-control" value="<%= user && user.nama ? user.nama : '' %>" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Email</label>
+                            <input type="email" name="email" class="form-control" value="<%= user && user.email ? user.email : '' %>" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Password Baru (Opsional)</label>
+                            <input type="password" name="password" class="form-control" placeholder="Kosongkan jika tidak ingin diubah">
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-0">
+                        <button type="button" class="btn btn-secondary btn-sm rounded-2" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-success btn-sm rounded-2 fw-semibold" style="background-color: var(--primary-green);">Simpan Perubahan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div id="ejs-raw-data" data-json="<%= JSON.stringify(attendances || []) %>" style="display: none;"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -433,6 +478,49 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        // SCRIPT LIVE SEARCH KARYAWAN
+        async function searchKaryawan() {
+            const query = document.getElementById('searchInput').value.trim();
+            const resultsContainer = document.getElementById('searchResults');
+
+            if (query.length === 0) {
+                resultsContainer.classList.add('d-none');
+                resultsContainer.innerHTML = '';
+                return;
+            }
+
+            try {
+                const res = await fetch(`/admin/users/search?q=${encodeURIComponent(query)}`);
+                const users = await res.json();
+
+                if (users.length > 0) {
+                    resultsContainer.innerHTML = users.map(u => `
+                        <a href="/admin/master-data" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-3">
+                            <div>
+                                <strong class="d-block text-dark small">${u.nama}</strong>
+                                <small class="text-muted" style="font-size: 0.75rem;">${u.email}</small>
+                            </div>
+                            <span class="badge bg-success rounded-pill"><i class="bi bi-arrow-right"></i></span>
+                        </a>
+                    `).join('');
+                    resultsContainer.classList.remove('d-none');
+                } else {
+                    resultsContainer.innerHTML = `<div class="list-group-item text-muted text-center py-2 small">Karyawan tidak ditemukan</div>`;
+                    resultsContainer.classList.remove('d-none');
+                }
+            } catch (err) {
+                console.error('Error Search:', err);
+            }
+        }
+
+        document.addEventListener('click', function(e) {
+            const searchBar = document.querySelector('.search-bar');
+            if (searchBar && !searchBar.contains(e.target)) {
+                document.getElementById('searchResults').classList.add('d-none');
+            }
+        });
+
+        // LEAFLET MAP & CHART SCRIPT
         const rawJson = document.getElementById('ejs-raw-data').getAttribute('data-json');
         const attendancesData = JSON.parse(rawJson);
 

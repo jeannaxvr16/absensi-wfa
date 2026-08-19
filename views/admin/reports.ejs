@@ -227,18 +227,9 @@
                                         <td>
                                             <% 
                                                 const rawStatus = (item.statusTelat || item.status || '').toString().trim().toLowerCase();
-                                                let isLate = false;
-
-                                                if (rawStatus !== '') {
-                                                    if (rawStatus.includes('terlambat') || rawStatus.includes('late')) {
-                                                        isLate = true;
-                                                    } else {
-                                                        isLate = false;
-                                                    }
-                                                }
                                             %>
 
-                                            <% if (isLate) { %>
+                                            <% if (rawStatus.includes('terlambat') || rawStatus.includes('late')) { %>
                                                 <span class="badge bg-danger">Terlambat</span>
                                             <% } else { %>
                                                 <span class="badge bg-success">Tepat Waktu</span>
