@@ -1,3 +1,5 @@
+process.env.TZ = "Asia/Jakarta";
+
 require('dotenv').config() // Load variabel lingkungan dari file .env
 const express = require('express')
 const session = require('express-session')
