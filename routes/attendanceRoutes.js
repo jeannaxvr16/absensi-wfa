@@ -33,7 +33,7 @@ function hitungStatusKeterlambatan(waktuAbsen, shiftUser) {
     const totalMenitAbsen = (jamWIB * 60) + menitWIB;
     const shift = (shiftUser || 'pagi').toLowerCase();
 
-    // 1. SHIFT PAGI (08:00 - 13:00)
+    // Toleransi Tepat Waktu: Masuk dalam kurun jam mulai s.d. jam selesai normal shift
     if (shift === 'pagi') {
         const jamMulai = 8 * 60;   // 08:00
         const jamSelesai = 13 * 60; // 13:00
@@ -43,7 +43,6 @@ function hitungStatusKeterlambatan(waktuAbsen, shiftUser) {
         return 'Terlambat';
     } 
     
-    // 2. SHIFT SIANG (13:00 - 21:00)
     else if (shift === 'siang') {
         const jamMulai = 13 * 60;  // 13:00
         const jamSelesai = 21 * 60; // 21:00
@@ -53,7 +52,6 @@ function hitungStatusKeterlambatan(waktuAbsen, shiftUser) {
         return 'Terlambat';
     } 
     
-    // 3. SHIFT SORE / MALAM (21:00 - 05:00)
     else if (shift === 'sore' || shift === 'malam') {
         const jamMulai = 21 * 60; // 21:00
         const jamSelesai = 5 * 60; // 05:00
@@ -112,48 +110,40 @@ router.post('/attendance', async (req, res) => {
         const shift = (user.shift || 'pagi').toLowerCase();
 
         let batasMulai = 0;
-        let batasSelesai = 0;
         let namaShift = "";
 
         if (shift === 'pagi') {
             batasMulai = 8 * 60;    // 08:00
-            batasSelesai = 13 * 60; // 13:00
-            namaShift = "Pagi (08:00 - 13:00 WIB)";
+            namaShift = "Pagi (Dimulai 08:00 WIB)";
         } else if (shift === 'siang') {
             batasMulai = 13 * 60;   // 13:00
-            batasSelesai = 21 * 60; // 21:00
-            namaShift = "Siang (13:00 - 21:00 WIB)";
+            namaShift = "Siang (Dimulai 13:00 WIB)";
         } else if (shift === 'sore' || shift === 'malam') {
             batasMulai = 21 * 60;   // 21:00
-            batasSelesai = 5 * 60;  // 05:00
-            namaShift = "Malam (21:00 - 05:00 WIB)";
+            namaShift = "Malam (Dimulai 21:00 WIB)";
         }
 
-        // --- VALIDASI RENTANG WAKTU SHIFT KETAT ---
+        // --- VALIDASI SEBELUM JAM SHIFT ---
         if (shift === 'pagi' || shift === 'siang') {
             if (totalMenit < batasMulai) {
                 return res.status(400).json({ 
                     message: `Presensi gagal! Belum waktunya absen. Shift Anda: ${namaShift}` 
                 });
             }
-            if (totalMenit > batasSelesai) {
-                return res.status(400).json({ 
-                    message: `Presensi gagal! Waktu shift Anda telah berakhir (${namaShift}).` 
-                });
-            }
         } else {
-            // Kasus Shift Malam (Lintas Hari 21:00 - 05:00)
-            const diLuarRentangMalam = (totalMenit > batasSelesai) && (totalMenit < batasMulai);
-            if (diLuarRentangMalam) {
+            // Kasus Shift Malam (Sebelum 21:00 dan sesudah 05:00 Pagi)
+            const sebelumShiftMalam = (totalMenit > (5 * 60)) && (totalMenit < batasMulai);
+            if (sebelumShiftMalam) {
                 return res.status(400).json({ 
-                    message: `Presensi gagal! Di luar jam operasional Shift Anda (${namaShift}).` 
+                    message: `Presensi gagal! Belum waktunya absen. Shift Anda: ${namaShift}` 
                 });
             }
         }
 
-        // Simpan Presensi Berhasil
-        const statusTeks = 'Tepat Waktu';
+        // Hitung Otomatis Apakah Tepat Waktu atau Terlambat
+        const statusTeks = hitungStatusKeterlambatan(now, shift);
 
+        // Simpan Presensi Ke Database
         await Attendance.create({
             user_id: user.id,
             qr_token: req.body.qr_token,
@@ -163,7 +153,7 @@ router.post('/attendance', async (req, res) => {
             waktu: now
         })
 
-        res.json({ message: 'Absensi berhasil! Status: Tepat Waktu', status: statusTeks })
+        res.json({ message: `Absensi berhasil! Status: ${statusTeks}`, status: statusTeks })
 
     } catch (error) {
         console.error('Error proses absensi:', error)
