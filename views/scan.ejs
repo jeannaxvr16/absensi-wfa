@@ -59,7 +59,7 @@
                 <div class="mt-4 p-3 bg-light rounded-3">
                     <h6 class="fw-bold text-dark mb-2" style="font-size: 0.9rem;"><i class="bi bg-light text-warning me-1"></i> Izin Akses Perangkat:</h6>
                     <ul class="text-muted small mb-0 ps-3">
-                        <li>Pastikan kamu klik **Allow / Izinkan** saat browser meminta akses Kamera.</li>
+                        <li>Pastikan kamu klik <strong>Allow / Izinkan</strong> saat browser meminta akses Kamera.</li>
                         <li>GPS laptop/HP wajib aktif agar koordinat presensi WFA bisa terpetakan di sistem Admin.</li>
                     </ul>
                 </div>
@@ -81,13 +81,10 @@
             alertIcon.className = `bi ${iconClass} me-2 fs-5`;
         }
 
-        // Jalankan fungsi sukses milikmu dengan perbaikan penanganan matikan kamera
         function onScanSuccess(decodedText) {
-            // Mematikan kamera secara aman (menangani Promise)
             html5QrCode.stop().then(() => {
                 updateUIStatus('warning', 'QR Terbaca! Sedang mengunci lokasi GPS Anda...', 'bi-geo-alt-fill');
                 
-                // Ambil Geolocation GPS
                 navigator.geolocation.getCurrentPosition(
                     async (position) => {
                         const latitude = position.coords.latitude;
@@ -96,7 +93,6 @@
                         updateUIStatus('info', 'Mengirimkan data absensi ke server...', 'bi-cloud-arrow-up-fill');
 
                         try {
-                            // Hit ke POST router /attendance yang kamu miliki
                             const response = await fetch('/attendance', {
                                 method: 'POST',
                                 headers: {
@@ -111,11 +107,11 @@
 
                             const result = await response.json();
                             
-                            if (response.ok && result.message === 'Absensi berhasil') {
+                            // PERBAIKAN: Hanya cek response.ok (status HTTP 200/201)
+                            if (response.ok) {
                                 updateUIStatus('success', result.message, 'bi-check-circle-fill');
-                                // Kembali ke dashboard setelah sukses dalam waktu 1.5 detik
                                 setTimeout(() => {
-                                    window.location.href = document.referrer || '/';
+                                    window.location.href = document.referrer || '/dashboard';
                                 }, 1500);
                             } else {
                                 updateUIStatus('danger', result.message || 'Gagal absen', 'bi-x-circle-fill');
@@ -136,7 +132,6 @@
             });
         }
 
-        // Konfigurasi kamera bawaan kamu
         const html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start(
             { facingMode: "environment" },
