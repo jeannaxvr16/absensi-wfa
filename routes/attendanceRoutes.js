@@ -123,7 +123,7 @@ router.post('/attendance', async (req, res) => {
             namaShift = "Malam (Dimulai 21:00 WIB)";
         }
 
-        // --- VALIDASI SEBELUM JAM SHIFT (HANYA CEK JIKA BELUM JAM MASUK) ---
+        // --- VALIDASI SEBELUM JAM SHIFT ---
         if (shift === 'pagi' || shift === 'siang') {
             if (totalMenit < batasMulai) {
                 return res.status(400).json({ 
@@ -140,7 +140,7 @@ router.post('/attendance', async (req, res) => {
             }
         }
 
-        // Hitung Otomatis Status Keterlambatan Berdasarkan Waktu Absen & Shift Karyawan
+        // Hitung Otomatis Status Keterlambatan
         const statusTeks = hitungStatusKeterlambatan(now, shift);
 
         // Simpan Presensi Ke Database
@@ -161,7 +161,7 @@ router.post('/attendance', async (req, res) => {
     }
 })
 
-// Dashboard Karyawan berdasarkan ID
+// Dashboard Karyawan berdasarkan ID (SUDAH DIHITUNG ULANG)
 router.get('/dashboard/:id', async (req, res) => {
     try {
         const userId = req.params.id; 
@@ -171,9 +171,18 @@ router.get('/dashboard/:id', async (req, res) => {
             return res.status(404).send('Karyawan tidak ditemukan');
         }
 
-        const attendances = await Attendance.findAll({
+        const attendancesRaw = await Attendance.findAll({
             where: { user_id: userId }, 
             order: [['waktu', 'DESC']]
+        });
+
+        // Paksa hitung ulang status keterlambatan untuk tampilan karyawan
+        const attendances = attendancesRaw.map(att => {
+            const data = att.toJSON ? att.toJSON() : att;
+            return {
+                ...data,
+                statusTelat: hitungStatusKeterlambatan(data.waktu, currentUser.shift || 'pagi')
+            };
         });
 
         const leaves = await Leave.findAll({
@@ -318,7 +327,7 @@ router.get('/admin/qr-dinamis', async (req, res) => {
 });
 
 // ==========================================
-// 5. JALUR DASHBOARD UTAMA ADMIN 
+// 5. JALUR DASHBOARD UTAMA ADMIN (SUDAH DIPAKSA HITUNG ULANG)
 // ==========================================
 router.get('/admin', async (req, res) => {
     try {
@@ -345,8 +354,8 @@ router.get('/admin', async (req, res) => {
             const matchUser = data.User || users.find(u => u.id === data.user_id);
             const shiftKaryawan = matchUser && matchUser.shift ? matchUser.shift : 'pagi';
             
-            // Hitung status telat dari data database atau kalkulasi ulang
-            const statusTeks = data.statusTelat || hitungStatusKeterlambatan(data.waktu, shiftKaryawan);
+            // PAKSA KALKULASI ULANG TANPA MEMBACA DATA LAMA DATABASE
+            const statusTeks = hitungStatusKeterlambatan(data.waktu, shiftKaryawan);
             
             if (statusTeks === 'Terlambat' && new Date(data.waktu).toDateString() === hariIniTeks) {
                 jumlahTerlambatHariIni++;

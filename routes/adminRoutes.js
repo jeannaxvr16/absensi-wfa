@@ -30,24 +30,76 @@ const isToday = (dateString) => {
     return dateStr === todayStr;
 };
 
+// ==========================================
+// FUNGSI BANTUAN LOGIKA KETERLAMBATAN SHIFT
+// ==========================================
+function hitungStatusKeterlambatan(waktuAbsen, shiftUser) {
+    const dateObj = new Date(waktuAbsen);
+    const formatter = new Intl.DateTimeFormat('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false
+    });
+    
+    const formattedParts = formatter.formatToParts(dateObj);
+    let jamWIB = 0;
+    let menitWIB = 0;
+
+    formattedParts.forEach(part => {
+        if (part.type === 'hour') jamWIB = parseInt(part.value, 10);
+        if (part.type === 'minute') menitWIB = parseInt(part.value, 10);
+    });
+
+    if (jamWIB === 24) jamWIB = 0;
+
+    const totalMenitAbsen = (jamWIB * 60) + menitWIB;
+    const shift = (shiftUser || 'pagi').toLowerCase();
+
+    if (shift === 'pagi') {
+        const jamMasuk = 8 * 60; // 08:00
+        if (totalMenitAbsen <= jamMasuk) return 'Tepat Waktu';
+        return 'Terlambat';
+    } 
+    else if (shift === 'siang') {
+        const jamMasuk = 13 * 60; // 13:00
+        if (totalMenitAbsen <= jamMasuk) return 'Tepat Waktu';
+        return 'Terlambat';
+    } 
+    else if (shift === 'sore' || shift === 'malam') {
+        const jamMasuk = 21 * 60; // 21:00
+        if (totalMenitAbsen >= jamMasuk || totalMenitAbsen <= (5 * 60)) return 'Tepat Waktu';
+        return 'Terlambat';
+    }
+
+    return 'Tepat Waktu';
+}
+
 // 1. DASHBOARD ADMIN
 router.get('/', async (req, res) => {
     try {
         const totalKaryawan = await User.count({ where: { role: 'karyawan' } });
         
-        // Ambil semua data absensi, lalu filter khusus hari ini untuk ringkasan Dashboard
-        const allAttendances = await Attendance.findAll({
+        // Ambil semua data absensi beserta User-nya
+        const allAttendancesRaw = await Attendance.findAll({
             include: [{ model: User }],
             order: [['waktu', 'DESC']]
+        });
+
+        // Hitung ulang status keterlambatan secara dinamis
+        const allAttendances = allAttendancesRaw.map(att => {
+            const data = att.toJSON ? att.toJSON() : att;
+            const shiftUser = data.User && data.User.shift ? data.User.shift : 'pagi';
+            return {
+                ...data,
+                statusTelat: hitungStatusKeterlambatan(data.waktu, shiftUser)
+            };
         });
 
         const attendancesToday = allAttendances.filter(item => isToday(item.waktu));
 
         const hadir = attendancesToday.length;
-        const terlambat = attendancesToday.filter(a => {
-            const status = a.statusTelat || a.status || '';
-            return status.toString().toLowerCase().includes('terlambat') || status.toString().toLowerCase().includes('late');
-        }).length;
+        const terlambat = attendancesToday.filter(a => a.statusTelat === 'Terlambat').length;
         
         const izinSakitCuti = await Leave.count({ where: { status: 'Pending' } });
 
@@ -69,7 +121,7 @@ router.get('/', async (req, res) => {
             shiftPagi,
             shiftSiang,
             shiftMalam,
-            shiftSore: shiftMalam // Backup kompatibilitas key nama lama
+            shiftSore: shiftMalam
         };
 
         res.render('admin/dashboard', {
@@ -117,14 +169,12 @@ router.post('/profile/update', async (req, res) => {
 
         const updateData = { nama, email };
 
-        // Update password jika diisi oleh admin
         if (password && password.trim() !== '') {
             updateData.password = await bcrypt.hash(password, 10);
         }
 
         await User.update(updateData, { where: { id: adminId } });
 
-        // Update data session login secara live
         req.session.user.nama = nama;
         req.session.user.email = email;
 
@@ -157,16 +207,13 @@ router.post('/users/add', async (req, res) => {
     try {
         const { nama, email, password, role, shift } = req.body;
 
-        // Cek apakah email sudah terdaftar
         const existingUser = await User.findOne({ where: { email } });
         if (existingUser) {
             return res.status(400).send('Email sudah digunakan oleh pengguna lain.');
         }
 
-        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Simpan user baru ke database
         await User.create({
             nama,
             email,
@@ -200,7 +247,6 @@ router.post('/users/edit/:id', async (req, res) => {
             shift: shift || user.shift
         };
 
-        // Update password hanya jika diisi oleh admin
         if (password && password.trim() !== '') {
             updateData.password = await bcrypt.hash(password, 10);
         }
@@ -219,16 +265,12 @@ router.post('/users/delete/:id', async (req, res) => {
     try {
         const userId = req.params.id;
 
-        // Mencegah admin menghapus akunnya sendiri
         if (req.session.user && req.session.user.id == userId) {
             return res.status(400).send('Anda tidak bisa menghapus akun Anda sendiri.');
         }
 
-        // Hapus data riwayat absensi dan izin terlebih dahulu (Foreign Key Constraint)
         await Attendance.destroy({ where: { user_id: userId } });
         await Leave.destroy({ where: { user_id: userId } });
-
-        // Hapus data user dari database
         await User.destroy({ where: { id: userId } });
 
         res.redirect('/admin/master-data');
@@ -238,13 +280,12 @@ router.post('/users/delete/:id', async (req, res) => {
     }
 });
 
-// 3. LAPORAN (REPORTS) DENGAN FITUR FILTER TANGGAL
+// 3. LAPORAN (REPORTS) DENGAN KALKULASI DINAMIS TERLAMBAT
 router.get('/reports', async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         let whereCondition = {};
 
-        // Jika admin memasukkan filter tanggal
         if (startDate && endDate) {
             whereCondition.waktu = {
                 [Op.between]: [
@@ -254,10 +295,20 @@ router.get('/reports', async (req, res) => {
             };
         }
 
-        const attendances = await Attendance.findAll({
+        const attendancesRaw = await Attendance.findAll({
             where: whereCondition,
             include: [{ model: User }],
             order: [['waktu', 'DESC']]
+        });
+
+        // Paksa kalkulasi status keterlambatan dinamis untuk laporan
+        const attendances = attendancesRaw.map(att => {
+            const data = att.toJSON ? att.toJSON() : att;
+            const shiftUser = data.User && data.User.shift ? data.User.shift : 'pagi';
+            return {
+                ...data,
+                statusTelat: hitungStatusKeterlambatan(data.waktu, shiftUser)
+            };
         });
 
         res.render('admin/reports', {
@@ -301,7 +352,7 @@ router.get('/leaves', async (req, res) => {
 router.post('/leaves/:id/action', async (req, res) => {
     try {
         const { id } = req.params;
-        const { statusAction } = req.body; // Mengambil nilai 'Disetujui' / 'Ditolak'
+        const { statusAction } = req.body;
 
         await Leave.update(
             { status: statusAction },
@@ -311,7 +362,7 @@ router.post('/leaves/:id/action', async (req, res) => {
         res.redirect('/admin/leaves');
     } catch (error) {
         console.error('Error Action Leave:', error);
-        res.status(500).send('Gagal memproses aksi pengajuan izin');
+        res.status(500).send('Gagal memproses pengajuan izin');
     }
 });
 
