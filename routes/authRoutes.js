@@ -5,10 +5,66 @@ const bcrypt = require('bcryptjs')
 const { v4: uuidv4 } = require('uuid')
 const QRCode = require('qrcode')
 
-// PERBAIKAN: Mengubah nama file import model menjadi huruf kecil sesuai sistem Linux
+// Import model
 const User = require('../models/user')
 const Attendance = require('../models/attendance')
 const Leave = require('../models/leave')
+
+// ==========================================
+// FUNGSI BANTUAN LOGIKA KETERLAMBATAN SHIFT
+// ==========================================
+function hitungStatusKeterlambatan(waktuAbsen, shiftUser) {
+    const dateObj = new Date(waktuAbsen);
+    const formatter = new Intl.DateTimeFormat('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false
+    });
+    
+    const formattedParts = formatter.formatToParts(dateObj);
+    let jamWIB = 0;
+    let menitWIB = 0;
+
+    formattedParts.forEach(part => {
+        if (part.type === 'hour') jamWIB = parseInt(part.value, 10);
+        if (part.type === 'minute') menitWIB = parseInt(part.value, 10);
+    });
+
+    if (jamWIB === 24) jamWIB = 0;
+
+    const totalMenitAbsen = (jamWIB * 60) + menitWIB;
+    const shift = (shiftUser || 'pagi').toLowerCase();
+
+    // SHIFT PAGI (Jam Masuk: 08:00 = 480 menit)
+    if (shift === 'pagi') {
+        const jamMasuk = 8 * 60; // 08:00
+        if (totalMenitAbsen <= jamMasuk) {
+            return 'Tepat Waktu';
+        }
+        return 'Terlambat';
+    } 
+    
+    // SHIFT SIANG (Jam Masuk: 13:00 = 780 menit)
+    else if (shift === 'siang') {
+        const jamMasuk = 13 * 60; // 13:00
+        if (totalMenitAbsen <= jamMasuk) {
+            return 'Tepat Waktu';
+        }
+        return 'Terlambat';
+    } 
+    
+    // SHIFT SORE / MALAM (Jam Masuk: 21:00 = 1260 menit)
+    else if (shift === 'sore' || shift === 'malam') {
+        const jamMasuk = 21 * 60; // 21:00
+        if (totalMenitAbsen >= jamMasuk || totalMenitAbsen <= (5 * 60)) {
+            return 'Tepat Waktu';
+        }
+        return 'Terlambat';
+    }
+
+    return 'Tepat Waktu';
+}
 
 // ==========================================
 // 1. ROUTE REGISTER (PENDAFTARAN AKUN)
@@ -35,12 +91,9 @@ router.post('/register', async (req, res) => {
             const qrPath = `public/qrcodes/${qrToken}.png`
             await QRCode.toFile(qrPath, qrToken)
 
-            // GABUNGAN OPSI A & B (MANUAL SELECTION + AUTOMATIC FALLBACK):
             if (req.body.shift && req.body.shift.trim() !== '') {
-                // OPSI A: Jika karyawan memilih shift dari dropdown
                 finalShift = req.body.shift;
             } else {
-                // OPSI B: Jika form shift kosong, server memilihkan secara acak
                 const daftarShift = ['Pagi', 'Siang', 'Malam'];
                 const randomIdx = Math.floor(Math.random() * daftarShift.length);
                 finalShift = daftarShift[randomIdx];
@@ -57,7 +110,7 @@ router.post('/register', async (req, res) => {
             qr_token: qrToken       // Bernilai null otomatis di database jika dia Admin
         })
 
-        // TAMPILAN HALAMAN SUKSES DINAMIS (Karyawan vs Admin)
+        // TAMPILAN HALAMAN SUKSES DINAMIS
         res.send(`
             <!DOCTYPE html>
             <html lang="id">
@@ -168,7 +221,6 @@ router.post('/login', async (req, res) => {
 
 router.get('/dashboard', async (req, res) => {
     try {
-        // PENGAMAN: Jika user belum login/session kosong, tendang langsung ke halaman login
         if (!req.session || !req.session.user) {
             return res.redirect('/login');
         }
@@ -180,11 +232,20 @@ router.get('/dashboard', async (req, res) => {
             return res.status(404).send('User tidak ditemukan')
         }
 
-        // Ambil data riwayat absensi
-        const attendances = await Attendance.findAll({
+        // Ambil data riwayat absensi mentah
+        const attendancesRaw = await Attendance.findAll({
             where: { user_id: user.id },
             order: [['waktu', 'DESC']]
         })
+
+        // UBAH: Hitung ulang status keterlambatan dinamis untuk tiap baris riwayat
+        const attendances = attendancesRaw.map(att => {
+            const data = att.toJSON ? att.toJSON() : att;
+            return {
+                ...data,
+                statusTelat: hitungStatusKeterlambatan(data.waktu, user.shift || 'pagi')
+            };
+        });
 
         // Ambil data riwayat cuti dari database berdasarkan id user
         const leaves = await Leave.findAll({
@@ -202,7 +263,6 @@ router.get('/dashboard', async (req, res) => {
 })
 
 router.get('/scan', (req, res) => {
-    // PENGAMAN: Pastikan user login baru bisa buka kamera scan
     if (!req.session || !req.session.user) {
         return res.redirect('/login');
     }
