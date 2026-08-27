@@ -76,7 +76,7 @@
         const alertIcon = document.getElementById('status-icon');
 
         function updateUIStatus(type, text, iconClass) {
-            alertBox.className = `alert alert-${type} d-flex mt-3`;
+            alertBox.className = `alert alert-${type} d-flex mt-3 align-items-center fw-semibold`;
             alertText.innerText = text;
             alertIcon.className = `bi ${iconClass} me-2 fs-5`;
         }
@@ -107,13 +107,25 @@
 
                             const result = await response.json();
                             
-                            // PERBAIKAN: Hanya cek response.ok (status HTTP 200/201)
                             if (response.ok) {
-                                updateUIStatus('success', result.message, 'bi-check-circle-fill');
+                                // PERBAIKAN LOGIKA STATUS WARNA
+                                const messageText = result.message || '';
+                                const isTerlambat = messageText.toLowerCase().includes('terlambat');
+
+                                if (isTerlambat) {
+                                    // Jika status Terlambat -> Warna Kuning (warning)
+                                    updateUIStatus('warning', messageText, 'bi-exclamation-triangle-fill');
+                                } else {
+                                    // Jika Tepat Waktu -> Warna Hijau (success)
+                                    updateUIStatus('success', messageText, 'bi-check-circle-fill');
+                                }
+
                                 setTimeout(() => {
                                     window.location.href = document.referrer || '/dashboard';
-                                }, 1500);
+                                }, 2000);
+
                             } else {
+                                // Jika Gagal / Error -> Warna Merah (danger)
                                 updateUIStatus('danger', result.message || 'Gagal absen', 'bi-x-circle-fill');
                             }
 
