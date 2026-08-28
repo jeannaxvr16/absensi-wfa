@@ -108,15 +108,14 @@
                             const result = await response.json();
                             
                             if (response.ok) {
-                                // PERBAIKAN LOGIKA STATUS WARNA
                                 const messageText = result.message || '';
                                 const isTerlambat = messageText.toLowerCase().includes('terlambat');
 
                                 if (isTerlambat) {
-                                    // Jika status Terlambat -> Warna Kuning (warning)
-                                    updateUIStatus('warning', messageText, 'bi-exclamation-triangle-fill');
+                                    // UBAH WARNA TERLAMBAT MENJADI MERAH (danger)
+                                    updateUIStatus('danger', messageText, 'bi-exclamation-octagon-fill');
                                 } else {
-                                    // Jika Tepat Waktu -> Warna Hijau (success)
+                                    // TEPAT WAKTU TETAP HIJAU (success)
                                     updateUIStatus('success', messageText, 'bi-check-circle-fill');
                                 }
 
@@ -125,7 +124,7 @@
                                 }, 2000);
 
                             } else {
-                                // Jika Gagal / Error -> Warna Merah (danger)
+                                // GAGAL ATAU DI LUAR JAM SHIFT -> MERAH (danger)
                                 updateUIStatus('danger', result.message || 'Gagal absen', 'bi-x-circle-fill');
                             }
 
