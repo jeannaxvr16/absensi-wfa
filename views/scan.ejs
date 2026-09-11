@@ -14,15 +14,18 @@
             font-family: 'Inter', sans-serif;
             background-color: #f4f6f9;
         }
+
         .scan-container {
             max-width: 600px;
             margin: 40px auto;
         }
+
         .card {
             border: none;
             border-radius: 16px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         }
+
         #reader {
             width: 100%;
             border-radius: 12px;
@@ -32,128 +35,367 @@
         }
     </style>
 </head>
+
 <body>
 
-    <div class="container px-3">
-        <div class="scan-container">
-            
-            <div class="mb-3">
-                <a href="javascript:history.back()" class="text-decoration-none text-secondary fw-semibold">
-                    <i class="bi bi-arrow-left me-1"></i> Kembali ke Dashboard
-                </a>
+<div class="container px-3">
+    <div class="scan-container">
+
+        <div class="mb-3">
+            <a href="javascript:history.back()" class="text-decoration-none text-secondary fw-semibold">
+                <i class="bi bi-arrow-left me-1"></i>
+                Kembali ke Dashboard
+            </a>
+        </div>
+
+        <div class="card p-4 bg-white">
+
+            <div class="text-center mb-4">
+                <h4 class="fw-bold text-dark mb-1">
+                    <i class="bi bi-qr-code-scan text-primary me-2"></i>
+                    Pindai QR Absensi
+                </h4>
+
+                <p class="text-muted small">
+                    Arahkan kamera perangkat Anda tepat ke QR Code absensi
+                    untuk mencatat kehadiran WFA.
+                </p>
             </div>
 
-            <div class="card p-4 bg-white">
-                <div class="text-center mb-4">
-                    <h4 class="fw-bold text-dark mb-1"><i class="bi bi-qr-code-scan text-primary me-2"></i>Pindai QR Absensi</h4>
-                    <p class="text-muted small">Arahkan kamera perangkat Anda tepat ke QR Code absensi untuk mencatat kehadiran WFA.</p>
+            <div id="reader"></div>
+
+            <div id="status-alert"
+                 class="alert d-none mt-3 align-items-center"
+                 role="alert">
+
+                <div id="status-icon" class="me-2 fs-5"></div>
+
+                <div id="status-text">
+                    Memproses...
                 </div>
 
-                <div id="reader"></div>
+            </div>
 
-                <div id="status-alert" class="alert d-none mt-3 align-items-center" role="alert">
-                    <div id="status-icon" class="me-2 fs-5"></div>
-                    <div id="status-text">Memproses...</div>
-                </div>
+            <div class="mt-4 p-3 bg-light rounded-3">
 
-                <div class="mt-4 p-3 bg-light rounded-3">
-                    <h6 class="fw-bold text-dark mb-2" style="font-size: 0.9rem;"><i class="bi bg-light text-warning me-1"></i> Izin Akses Perangkat:</h6>
-                    <ul class="text-muted small mb-0 ps-3">
-                        <li>Pastikan kamu klik <strong>Allow / Izinkan</strong> saat browser meminta akses Kamera.</li>
-                        <li>GPS laptop/HP wajib aktif agar koordinat presensi WFA bisa terpetakan di sistem Admin.</li>
-                    </ul>
-                </div>
+                <h6 class="fw-bold text-dark mb-2" style="font-size: 0.9rem;">
+                    <i class="bi bi-shield-check text-warning me-1"></i>
+                    Izin Akses Perangkat:
+                </h6>
+
+                <ul class="text-muted small mb-0 ps-3">
+
+                    <li>
+                        Pastikan kamu klik
+                        <strong>Allow / Izinkan</strong>
+                        saat browser meminta akses Kamera.
+                    </li>
+
+                    <li>
+                        GPS perangkat wajib aktif dan diizinkan
+                        agar koordinat presensi dapat dicatat.
+                    </li>
+
+                </ul>
+
             </div>
 
         </div>
     </div>
+</div>
 
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    
-    <script>
-        const alertBox = document.getElementById('status-alert');
-        const alertText = document.getElementById('status-text');
-        const alertIcon = document.getElementById('status-icon');
+<script src="https://unpkg.com/html5-qrcode"></script>
 
-        function updateUIStatus(type, text, iconClass) {
-            alertBox.className = `alert alert-${type} d-flex mt-3 align-items-center fw-semibold`;
-            alertText.innerText = text;
-            alertIcon.className = `bi ${iconClass} me-2 fs-5`;
-        }
+<script>
 
-        function onScanSuccess(decodedText) {
-            html5QrCode.stop().then(() => {
-                updateUIStatus('warning', 'QR Terbaca! Sedang mengunci lokasi GPS Anda...', 'bi-geo-alt-fill');
-                
-                navigator.geolocation.getCurrentPosition(
-                    async (position) => {
-                        const latitude = position.coords.latitude;
-                        const longitude = position.coords.longitude;
+const alertBox = document.getElementById('status-alert');
+const alertText = document.getElementById('status-text');
+const alertIcon = document.getElementById('status-icon');
 
-                        updateUIStatus('info', 'Mengirimkan data absensi ke server...', 'bi-cloud-arrow-up-fill');
+function updateUIStatus(type, text, iconClass) {
 
-                        try {
-                            const response = await fetch('/attendance', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    qr_token: decodedText,
-                                    latitude: latitude,
-                                    longitude: longitude
-                                })
-                            });
+    alertBox.className =
+        `alert alert-${type} d-flex mt-3 align-items-center fw-semibold`;
 
-                            const result = await response.json();
-                            
-                            if (response.ok) {
-                                const messageText = result.message || '';
-                                const isTerlambat = messageText.toLowerCase().includes('terlambat');
+    alertText.innerText = text;
 
-                                if (isTerlambat) {
-                                    // UBAH WARNA TERLAMBAT MENJADI MERAH (danger)
-                                    updateUIStatus('danger', messageText, 'bi-exclamation-octagon-fill');
-                                } else {
-                                    // TEPAT WAKTU TETAP HIJAU (success)
-                                    updateUIStatus('success', messageText, 'bi-check-circle-fill');
-                                }
+    alertIcon.className =
+        `bi ${iconClass} me-2 fs-5`;
+}
 
-                                setTimeout(() => {
-                                    window.location.href = document.referrer || '/dashboard';
-                                }, 2000);
 
-                            } else {
-                                // GAGAL ATAU DI LUAR JAM SHIFT -> MERAH (danger)
-                                updateUIStatus('danger', result.message || 'Gagal absen', 'bi-x-circle-fill');
-                            }
+// ======================================================
+// PROSES HASIL SCAN QR
+// ======================================================
 
-                        } catch (error) {
-                            console.error(error);
-                            updateUIStatus('danger', 'Gagal terhubung ke server.', 'bi-exclamation-triangle-fill');
-                        }
+async function onScanSuccess(decodedText) {
+
+    // Hentikan kamera setelah QR berhasil terbaca
+    try {
+        await html5QrCode.stop();
+    } catch (err) {
+        console.log("Kamera sudah berhenti atau gagal dihentikan:", err);
+    }
+
+    updateUIStatus(
+        'warning',
+        'QR terbaca! Sedang mengambil lokasi GPS Anda...',
+        'bi-geo-alt-fill'
+    );
+
+
+    // ======================================================
+    // AMBIL LOKASI GPS
+    // ======================================================
+
+    if (!navigator.geolocation) {
+
+        updateUIStatus(
+            'danger',
+            'Browser tidak mendukung Geolocation API.',
+            'bi-geo-fill'
+        );
+
+        return;
+    }
+
+
+    navigator.geolocation.getCurrentPosition(
+
+        async (position) => {
+
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+
+            updateUIStatus(
+                'info',
+                'Lokasi berhasil diperoleh. Mengirim data absensi...',
+                'bi-cloud-arrow-up-fill'
+            );
+
+
+            try {
+
+                // ==================================================
+                // CEK JENIS QR
+                // ==================================================
+
+                const isDynamicQR =
+                    decodedText.startsWith('WFA_DYNAMIC:');
+
+
+                let requestBody;
+
+
+                // ==================================================
+                // QR DINAMIS
+                // ==================================================
+
+                if (isDynamicQR) {
+
+                    const dynamicToken =
+                        decodedText.replace('WFA_DYNAMIC:', '');
+
+                    requestBody = {
+                        dynamic_token: dynamicToken,
+                        latitude: latitude,
+                        longitude: longitude
+                    };
+
+                }
+
+                // ==================================================
+                // QR PERSONAL KARYAWAN
+                // ==================================================
+
+                else {
+
+                    requestBody = {
+                        qr_token: decodedText,
+                        latitude: latitude,
+                        longitude: longitude
+                    };
+
+                }
+
+
+                // ==================================================
+                // KIRIM KE BACKEND
+                // ==================================================
+
+                const response = await fetch('/attendance', {
+
+                    method: 'POST',
+
+                    headers: {
+                        'Content-Type': 'application/json'
                     },
-                    (error) => {
-                        updateUIStatus('danger', 'GPS harus diaktifkan dan diizinkan untuk absensi!', 'bi-geo-fill');
-                        console.log(error);
+
+                    body: JSON.stringify(requestBody)
+
+                });
+
+
+                const result = await response.json();
+
+
+                // ==================================================
+                // BERHASIL
+                // ==================================================
+
+                if (response.ok) {
+
+                    const messageText =
+                        result.message || 'Absensi berhasil dicatat.';
+
+                    const isTerlambat =
+                        messageText.toLowerCase().includes('terlambat');
+
+
+                    if (isTerlambat) {
+
+                        updateUIStatus(
+                            'danger',
+                            messageText,
+                            'bi-exclamation-octagon-fill'
+                        );
+
+                    } else {
+
+                        updateUIStatus(
+                            'success',
+                            messageText,
+                            'bi-check-circle-fill'
+                        );
+
                     }
+
+
+                    // Kembali ke dashboard
+                    setTimeout(() => {
+
+                        window.location.href =
+                            '/dashboard';
+
+                    }, 2000);
+
+                }
+
+
+                // ==================================================
+                // GAGAL
+                // ==================================================
+
+                else {
+
+                    updateUIStatus(
+                        'danger',
+                        result.message || 'Gagal melakukan absensi.',
+                        'bi-x-circle-fill'
+                    );
+
+                }
+
+            }
+
+            catch (error) {
+
+                console.error(error);
+
+                updateUIStatus(
+                    'danger',
+                    'Gagal terhubung ke server.',
+                    'bi-exclamation-triangle-fill'
                 );
-            }).catch(err => {
-                console.error("Gagal menghentikan kamera: ", err);
-            });
+
+            }
+
+        },
+
+
+        // ======================================================
+        // GPS ERROR
+        // ======================================================
+
+        (error) => {
+
+            console.error(error);
+
+            let pesanGPS =
+                'GPS harus diaktifkan dan diizinkan untuk melakukan absensi.';
+
+            if (error.code === 1) {
+
+                pesanGPS =
+                    'Izin lokasi ditolak. Silakan izinkan akses lokasi pada browser.';
+
+            } else if (error.code === 2) {
+
+                pesanGPS =
+                    'Lokasi tidak dapat ditemukan. Pastikan GPS perangkat aktif.';
+
+            } else if (error.code === 3) {
+
+                pesanGPS =
+                    'Pengambilan lokasi terlalu lama. Coba lagi.';
+
+            }
+
+
+            updateUIStatus(
+                'danger',
+                pesanGPS,
+                'bi-geo-fill'
+            );
+
+        },
+
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
         }
 
-        const html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start(
-            { facingMode: "environment" },
-            {
-                fps: 10,
-                qrbox: 250
-            },
-            onScanSuccess
-        ).catch(err => {
-            updateUIStatus('danger', 'Kamera gagal diakses. Pastikan tidak dipakai aplikasi lain.', 'bi-camera-video-off-fill');
-        });
-    </script>
+    );
+
+}
+
+
+// ======================================================
+// INISIALISASI SCANNER
+// ======================================================
+
+const html5QrCode =
+    new Html5Qrcode("reader");
+
+
+html5QrCode.start(
+
+    {
+        facingMode: "environment"
+    },
+
+    {
+        fps: 10,
+        qrbox: 250
+    },
+
+    onScanSuccess
+
+).catch(err => {
+
+    console.error(err);
+
+    updateUIStatus(
+        'danger',
+        'Kamera gagal diakses. Pastikan kamera telah diizinkan dan tidak sedang digunakan aplikasi lain.',
+        'bi-camera-video-off-fill'
+    );
+
+});
+
+</script>
+
 </body>
 </html>
