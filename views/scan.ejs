@@ -1,39 +1,43 @@
 <!DOCTYPE html>
+
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scan QR Absensi - WFA</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f4f6f9;
-        }
+```
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 
-        .scan-container {
-            max-width: 600px;
-            margin: 40px auto;
-        }
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f4f6f9;
+    }
 
-        .card {
-            border: none;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        }
+    .scan-container {
+        max-width: 600px;
+        margin: 40px auto;
+    }
 
-        #reader {
-            width: 100%;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 2px dashed #0d6efd !important;
-            background-color: #000;
-        }
-    </style>
+    .card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    #reader {
+        width: 100%;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 2px dashed #0d6efd !important;
+        background-color: #000;
+    }
+</style>
+```
+
 </head>
 
 <body>
@@ -41,67 +45,77 @@
 <div class="container px-3">
     <div class="scan-container">
 
-        <div class="mb-3">
-            <a href="javascript:history.back()" class="text-decoration-none text-secondary fw-semibold">
-                <i class="bi bi-arrow-left me-1"></i>
-                Kembali ke Dashboard
-            </a>
-        </div>
-
-        <div class="card p-4 bg-white">
-
-            <div class="text-center mb-4">
-                <h4 class="fw-bold text-dark mb-1">
-                    <i class="bi bi-qr-code-scan text-primary me-2"></i>
-                    Pindai QR Absensi
-                </h4>
-
-                <p class="text-muted small">
-                    Arahkan kamera perangkat Anda tepat ke QR Code absensi
-                    untuk mencatat kehadiran WFA.
-                </p>
-            </div>
-
-            <div id="reader"></div>
-
-            <div id="status-alert"
-                 class="alert d-none mt-3 align-items-center"
-                 role="alert">
-
-                <div id="status-icon" class="me-2 fs-5"></div>
-
-                <div id="status-text">
-                    Memproses...
-                </div>
-
-            </div>
-
-            <div class="mt-4 p-3 bg-light rounded-3">
-
-                <h6 class="fw-bold text-dark mb-2" style="font-size: 0.9rem;">
-                    <i class="bi bi-shield-check text-warning me-1"></i>
-                    Izin Akses Perangkat:
-                </h6>
-
-                <ul class="text-muted small mb-0 ps-3">
-
-                    <li>
-                        Pastikan kamu klik
-                        <strong>Allow / Izinkan</strong>
-                        saat browser meminta akses Kamera.
-                    </li>
-
-                    <li>
-                        GPS perangkat wajib aktif dan diizinkan
-                        agar koordinat presensi dapat dicatat.
-                    </li>
-
-                </ul>
-
-            </div>
-
-        </div>
+```
+    <div class="mb-3">
+        <a href="javascript:history.back()"
+           class="text-decoration-none text-secondary fw-semibold">
+            <i class="bi bi-arrow-left me-1"></i>
+            Kembali ke Dashboard
+        </a>
     </div>
+
+    <div class="card p-4 bg-white">
+
+        <div class="text-center mb-4">
+
+            <h4 class="fw-bold text-dark mb-1">
+                <i class="bi bi-qr-code-scan text-primary me-2"></i>
+                Pindai QR Absensi
+            </h4>
+
+            <p class="text-muted small">
+                Arahkan kamera perangkat Anda tepat ke QR Code absensi
+                untuk mencatat kehadiran WFA.
+            </p>
+
+        </div>
+
+        <div id="reader"></div>
+
+        <div id="status-alert"
+             class="alert d-none mt-3 align-items-center"
+             role="alert">
+
+            <div id="status-icon" class="me-2 fs-5"></div>
+
+            <div id="status-text">
+                Memproses...
+            </div>
+
+        </div>
+
+        <div class="mt-4 p-3 bg-light rounded-3">
+
+            <h6 class="fw-bold text-dark mb-2"
+                style="font-size: 0.9rem;">
+
+                <i class="bi bi-shield-check text-warning me-1"></i>
+                Izin Akses Perangkat:
+
+            </h6>
+
+            <ul class="text-muted small mb-0 ps-3">
+
+                <li>
+                    Pastikan kamu klik
+                    <strong>Allow / Izinkan</strong>
+                    saat browser meminta akses Kamera.
+                </li>
+
+                <li>
+                    GPS perangkat wajib aktif dan diizinkan
+                    agar koordinat presensi dapat dicatat.
+                </li>
+
+            </ul>
+
+        </div>
+
+    </div>
+
+</div>
+```
+
 </div>
 
 <script src="https://unpkg.com/html5-qrcode"></script>
@@ -111,6 +125,9 @@
 const alertBox = document.getElementById('status-alert');
 const alertText = document.getElementById('status-text');
 const alertIcon = document.getElementById('status-icon');
+
+let sudahScan = false;
+
 
 function updateUIStatus(type, text, iconClass) {
 
@@ -125,17 +142,39 @@ function updateUIStatus(type, text, iconClass) {
 
 
 // ======================================================
-// PROSES HASIL SCAN QR
+// PROSES HASIL SCAN
 // ======================================================
 
 async function onScanSuccess(decodedText) {
 
-    // Hentikan kamera setelah QR berhasil terbaca
-    try {
-        await html5QrCode.stop();
-    } catch (err) {
-        console.log("Kamera sudah berhenti atau gagal dihentikan:", err);
+    // Mencegah scanner mengirim request berkali-kali
+    if (sudahScan) {
+        return;
     }
+
+    sudahScan = true;
+
+
+    console.log('QR TERBACA:', decodedText);
+
+
+    // ======================================================
+    // HENTIKAN KAMERA
+    // ======================================================
+
+    try {
+
+        await html5QrCode.stop();
+
+    } catch (err) {
+
+        console.log(
+            'Kamera sudah berhenti:',
+            err
+        );
+
+    }
+
 
     updateUIStatus(
         'warning',
@@ -145,7 +184,7 @@ async function onScanSuccess(decodedText) {
 
 
     // ======================================================
-    // AMBIL LOKASI GPS
+    // CEK GEOLOCATION
     // ======================================================
 
     if (!navigator.geolocation) {
@@ -156,16 +195,32 @@ async function onScanSuccess(decodedText) {
             'bi-geo-fill'
         );
 
+        sudahScan = false;
+
         return;
     }
 
+
+    // ======================================================
+    // AMBIL LOKASI
+    // ======================================================
 
     navigator.geolocation.getCurrentPosition(
 
         async (position) => {
 
-            const latitude = position.coords.latitude;
-            const longitude = position.coords.longitude;
+            const latitude =
+                position.coords.latitude;
+
+            const longitude =
+                position.coords.longitude;
+
+
+            console.log(
+                'GPS:',
+                latitude,
+                longitude
+            );
 
 
             updateUIStatus(
@@ -189,21 +244,37 @@ async function onScanSuccess(decodedText) {
 
 
                 // ==================================================
-                // QR DINAMIS
+                // QR DINAMIS ADMIN
                 // ==================================================
 
                 if (isDynamicQR) {
 
-                    const dynamicToken =
-                        decodedText.replace('WFA_DYNAMIC:', '');
+                    /*
+                     * PENTING:
+                     *
+                     * Jangan buang "WFA_DYNAMIC:".
+                     *
+                     * Backend attendanceRoutes.js
+                     * melakukan pengecekan:
+                     *
+                     * dynamic_token.startsWith('WFA_DYNAMIC:')
+                     *
+                     */
 
                     requestBody = {
-                        dynamic_token: dynamicToken,
-                        latitude: latitude,
-                        longitude: longitude
+
+                        dynamic_token:
+                            decodedText,
+
+                        latitude:
+                            latitude,
+
+                        longitude:
+                            longitude
                     };
 
                 }
+
 
                 // ==================================================
                 // QR PERSONAL KARYAWAN
@@ -212,32 +283,77 @@ async function onScanSuccess(decodedText) {
                 else {
 
                     requestBody = {
-                        qr_token: decodedText,
-                        latitude: latitude,
-                        longitude: longitude
+
+                        qr_token:
+                            decodedText,
+
+                        latitude:
+                            latitude,
+
+                        longitude:
+                            longitude
                     };
 
                 }
+
+
+                console.log(
+                    'DATA YANG DIKIRIM:',
+                    requestBody
+                );
 
 
                 // ==================================================
                 // KIRIM KE BACKEND
                 // ==================================================
 
-                const response = await fetch('/attendance', {
+                const response =
+                    await fetch(
+                        '/attendance',
+                        {
 
-                    method: 'POST',
+                            method: 'POST',
 
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                            headers: {
+                                'Content-Type':
+                                    'application/json'
+                            },
 
-                    body: JSON.stringify(requestBody)
+                            credentials: 'same-origin',
 
-                });
+                            body:
+                                JSON.stringify(
+                                    requestBody
+                                )
+                        }
+                    );
 
 
-                const result = await response.json();
+                // ==================================================
+                // BACA RESPONSE
+                // ==================================================
+
+                let result;
+
+                try {
+
+                    result =
+                        await response.json();
+
+                } catch (jsonError) {
+
+                    result = {
+                        message:
+                            'Response server tidak valid.'
+                    };
+
+                }
+
+
+                console.log(
+                    'RESPONSE SERVER:',
+                    result
+                );
 
 
                 // ==================================================
@@ -247,10 +363,21 @@ async function onScanSuccess(decodedText) {
                 if (response.ok) {
 
                     const messageText =
-                        result.message || 'Absensi berhasil dicatat.';
+                        result.message ||
+                        'Absensi berhasil dicatat.';
+
+
+                    const status =
+                        result.status || '';
+
 
                     const isTerlambat =
-                        messageText.toLowerCase().includes('terlambat');
+                        status
+                            .toLowerCase()
+                            .includes('terlambat') ||
+                        messageText
+                            .toLowerCase()
+                            .includes('terlambat');
 
 
                     if (isTerlambat) {
@@ -272,7 +399,10 @@ async function onScanSuccess(decodedText) {
                     }
 
 
-                    // Kembali ke dashboard
+                    // ==================================================
+                    // KEMBALI DASHBOARD
+                    // ==================================================
+
                     setTimeout(() => {
 
                         window.location.href =
@@ -291,9 +421,13 @@ async function onScanSuccess(decodedText) {
 
                     updateUIStatus(
                         'danger',
-                        result.message || 'Gagal melakukan absensi.',
+                        result.message ||
+                        'Gagal melakukan absensi.',
                         'bi-x-circle-fill'
                     );
+
+
+                    sudahScan = false;
 
                 }
 
@@ -301,13 +435,20 @@ async function onScanSuccess(decodedText) {
 
             catch (error) {
 
-                console.error(error);
+                console.error(
+                    'Error fetch attendance:',
+                    error
+                );
+
 
                 updateUIStatus(
                     'danger',
                     'Gagal terhubung ke server.',
                     'bi-exclamation-triangle-fill'
                 );
+
+
+                sudahScan = false;
 
             }
 
@@ -320,22 +461,31 @@ async function onScanSuccess(decodedText) {
 
         (error) => {
 
-            console.error(error);
+            console.error(
+                'GPS ERROR:',
+                error
+            );
+
 
             let pesanGPS =
                 'GPS harus diaktifkan dan diizinkan untuk melakukan absensi.';
+
 
             if (error.code === 1) {
 
                 pesanGPS =
                     'Izin lokasi ditolak. Silakan izinkan akses lokasi pada browser.';
 
-            } else if (error.code === 2) {
+            }
+
+            else if (error.code === 2) {
 
                 pesanGPS =
                     'Lokasi tidak dapat ditemukan. Pastikan GPS perangkat aktif.';
 
-            } else if (error.code === 3) {
+            }
+
+            else if (error.code === 3) {
 
                 pesanGPS =
                     'Pengambilan lokasi terlalu lama. Coba lagi.';
@@ -349,11 +499,19 @@ async function onScanSuccess(decodedText) {
                 'bi-geo-fill'
             );
 
+
+            sudahScan = false;
+
         },
+
+
+        // ======================================================
+        // OPSI GPS
+        // ======================================================
 
         {
             enableHighAccuracy: true,
-            timeout: 10000,
+            timeout: 15000,
             maximumAge: 0
         }
 
@@ -367,13 +525,13 @@ async function onScanSuccess(decodedText) {
 // ======================================================
 
 const html5QrCode =
-    new Html5Qrcode("reader");
+    new Html5Qrcode('reader');
 
 
 html5QrCode.start(
 
     {
-        facingMode: "environment"
+        facingMode: 'environment'
     },
 
     {
@@ -385,7 +543,11 @@ html5QrCode.start(
 
 ).catch(err => {
 
-    console.error(err);
+    console.error(
+        'KAMERA ERROR:',
+        err
+    );
+
 
     updateUIStatus(
         'danger',

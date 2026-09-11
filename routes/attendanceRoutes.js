@@ -1,16 +1,75 @@
 const express = require('express')
 const router = express.Router()
+const jwt = require('jsonwebtoken')
 const { Op } = require('sequelize')
 
-// Import model
+// ==========================================
+// IMPORT MODEL
+// ==========================================
 const Attendance = require('../models/attendance')
 const User = require('../models/user')
 const Leave = require('../models/leave')
 
 // ==========================================
-// FUNGSI BANTUAN LOGIKA KETERLAMBATAN SHIFT
+// SECRET QR DINAMIS
+// HARUS SAMA DENGAN YANG DIPAKAI SAAT SIGN
 // ==========================================
+const QR_SECRET =
+    process.env.SESSION_SECRET ||
+    'rahasia_super_aman_absensi_wfa_2026'
+
+
+// ==========================================
+// FUNGSI CEK LOGIN KARYAWAN
+// ==========================================
+const isKaryawan = (req, res, next) => {
+
+    if (
+        req.session &&
+        req.session.user &&
+        req.session.user.role === 'karyawan'
+    ) {
+        return next()
+    }
+
+    return res.status(401).json({
+        message: 'Silakan login terlebih dahulu.'
+    })
+}
+
+
+// ==========================================
+// FUNGSI CEK ADMIN
+// ==========================================
+const isAdmin = (req, res, next) => {
+
+    if (
+        req.session &&
+        req.session.user &&
+        req.session.user.role === 'admin'
+    ) {
+        return next()
+    }
+
+    return res.redirect('/login')
+}
+
+
+// ==========================================
+// LOGIKA STATUS KETERLAMBATAN
+// ==========================================
+//
+// SHIFT PAGI  : 08:00 - 13:00
+// SHIFT SIANG : 13:00 - 21:00
+// SHIFT MALAM : 21:00 - 05:00
+//
+// Di dalam jam shift = Tepat Waktu
+// Setelah jam selesai shift = Terlambat
+// Sebelum shift dimulai = ditolak
+// ==========================================
+
 function hitungStatusKeterlambatan(waktuAbsen, shiftUser) {
+
     const dateObj = new Date(waktuAbsen)
 
     const formatter = new Intl.DateTimeFormat('id-ID', {
@@ -20,31 +79,101 @@ function hitungStatusKeterlambatan(waktuAbsen, shiftUser) {
         hour12: false
     })
 
-    const formattedParts = formatter.formatToParts(dateObj)
+    const parts =
+        formatter.formatToParts(dateObj)
 
     let jamWIB = 0
     let menitWIB = 0
 
-    formattedParts.forEach(part => {
-        if (part.type === 'hour') jamWIB = parseInt(part.value, 10)
-        if (part.type === 'minute') menitWIB = parseInt(part.value, 10)
+    parts.forEach(part => {
+
+        if (part.type === 'hour') {
+            jamWIB = parseInt(part.value, 10)
+        }
+
+        if (part.type === 'minute') {
+            menitWIB = parseInt(part.value, 10)
+        }
+
     })
 
-    if (jamWIB === 24) jamWIB = 0
+    if (jamWIB === 24) {
+        jamWIB = 0
+    }
 
-    const totalMenitAbsen = (jamWIB * 60) + menitWIB
-    const shift = (shiftUser || 'pagi').toLowerCase()
+    const totalMenit =
+        (jamWIB * 60) + menitWIB
+
+    const shift =
+        (shiftUser || 'pagi').toLowerCase()
+
 
     // ==========================================
-    // SHIFT PAGI 08:00 - 13:00
+    // SHIFT PAGI
+    // 08:00 - 13:00
     // ==========================================
+
     if (shift === 'pagi') {
-        const jamMulai = 8 * 60
-        const jamSelesai = 13 * 60
+
+        const mulai = 8 * 60
+        const selesai = 13 * 60
 
         if (
-            totalMenitAbsen >= jamMulai &&
-            totalMenitAbsen <= jamSelesai
+            totalMenit >= mulai &&
+            totalMenit <= selesai
+        ) {
+            return 'Tepat Waktu'
+        }
+
+        if (totalMenit > selesai) {
+            return 'Terlambat'
+        }
+
+        return 'Tepat Waktu'
+    }
+
+
+    // ==========================================
+    // SHIFT SIANG
+    // 13:00 - 21:00
+    // ==========================================
+
+    if (shift === 'siang') {
+
+        const mulai = 13 * 60
+        const selesai = 21 * 60
+
+        if (
+            totalMenit >= mulai &&
+            totalMenit <= selesai
+        ) {
+            return 'Tepat Waktu'
+        }
+
+        if (totalMenit > selesai) {
+            return 'Terlambat'
+        }
+
+        return 'Tepat Waktu'
+    }
+
+
+    // ==========================================
+    // SHIFT MALAM
+    // 21:00 - 05:00
+    // ==========================================
+
+    if (
+        shift === 'malam' ||
+        shift === 'sore'
+    ) {
+
+        const mulai = 21 * 60
+        const selesai = 5 * 60
+
+        if (
+            totalMenit >= mulai ||
+            totalMenit <= selesai
         ) {
             return 'Tepat Waktu'
         }
@@ -52,695 +181,774 @@ function hitungStatusKeterlambatan(waktuAbsen, shiftUser) {
         return 'Terlambat'
     }
 
-    // ==========================================
-    // SHIFT SIANG 13:00 - 21:00
-    // ==========================================
-    else if (shift === 'siang') {
-        const jamMulai = 13 * 60
-        const jamSelesai = 21 * 60
-
-        if (
-            totalMenitAbsen >= jamMulai &&
-            totalMenitAbsen <= jamSelesai
-        ) {
-            return 'Tepat Waktu'
-        }
-
-        return 'Terlambat'
-    }
-
-    // ==========================================
-    // SHIFT MALAM 21:00 - 05:00
-    // ==========================================
-    else if (shift === 'sore' || shift === 'malam') {
-        const jamMulai = 21 * 60
-        const jamSelesai = 5 * 60
-
-        if (
-            totalMenitAbsen >= jamMulai ||
-            totalMenitAbsen <= jamSelesai
-        ) {
-            return 'Tepat Waktu'
-        }
-
-        return 'Terlambat'
-    }
 
     return 'Tepat Waktu'
 }
 
 
 // ==========================================
-// 1. PROSES ABSENSI QR
+// 1. PROSES ABSENSI
 // ==========================================
-router.post('/attendance', async (req, res) => {
-    try {
-
-        // ==========================================
-        // DATA DARI FRONTEND
-        // ==========================================
-        const {
-            qr_token,
-            dynamic_token,
-            latitude,
-            longitude
-        } = req.body
-
-
-        // ==========================================
-        // WAJIB LOGIN
-        // ==========================================
-        if (!req.session || !req.session.user) {
-            return res.status(401).json({
-                message: 'Silakan login terlebih dahulu sebelum melakukan presensi.'
-            })
-        }
-
-
-        // ==========================================
-        // AMBIL USER DARI SESSION LOGIN
-        // ==========================================
-        const sessionUserId = req.session.user.id
-
-        const loggedInUser = await User.findByPk(sessionUserId)
-
-        if (!loggedInUser) {
-            return res.status(404).json({
-                message: 'Data karyawan tidak ditemukan.'
-            })
-        }
-
-
-        // ==========================================
-        // CEK QR
-        // ==========================================
-
-        let user = loggedInUser
-
-        // ------------------------------------------
-        // QR DINAMIS ADMIN
-        // ------------------------------------------
-        if (dynamic_token) {
-
-            // Format QR Dinamis:
-            // WFA_DYNAMIC:TOKEN
-
-            if (!dynamic_token.startsWith('WFA_DYNAMIC:')) {
-                return res.status(400).json({
-                    message: 'QR Dinamis tidak valid.'
-                })
-            }
-
-            const token = dynamic_token.replace('WFA_DYNAMIC:', '')
-
-            if (!token) {
-                return res.status(400).json({
-                    message: 'Token QR Dinamis tidak ditemukan.'
-                })
-            }
-
-            /*
-             * Untuk QR Dinamis, identitas karyawan
-             * TIDAK diambil dari QR.
-             *
-             * Identitas diambil dari akun yang sedang login.
-             */
-            user = loggedInUser
-        }
-
-        // ------------------------------------------
-        // QR PRIBADI KARYAWAN
-        // ------------------------------------------
-        else if (qr_token) {
-
-            const qrUser = await User.findOne({
-                where: {
-                    qr_token: qr_token
-                }
-            })
-
-            if (!qrUser) {
-                return res.status(400).json({
-                    message: 'QR Code tidak valid.'
-                })
-            }
-
-            /*
-             * Supaya QR pribadi milik karyawan lain
-             * tidak bisa dipakai oleh akun berbeda.
-             */
-            if (Number(qrUser.id) !== Number(loggedInUser.id)) {
-                return res.status(403).json({
-                    message: 'QR Code bukan milik akun karyawan yang sedang login.'
-                })
-            }
-
-            user = qrUser
-        }
-
-        // ------------------------------------------
-        // TIDAK ADA QR
-        // ------------------------------------------
-        else {
-            return res.status(400).json({
-                message: 'QR Code tidak ditemukan.'
-            })
-        }
-
-
-        // ==========================================
-        // VALIDASI GPS
-        // ==========================================
-        if (
-            latitude === undefined ||
-            latitude === null ||
-            longitude === undefined ||
-            longitude === null
-        ) {
-            return res.status(400).json({
-                message: 'Lokasi GPS tidak ditemukan. Silakan izinkan akses lokasi.'
-            })
-        }
-
-
-        // ==========================================
-        // CEK PRESENSI HARI INI
-        // ==========================================
-        const sekarang = new Date()
-
-        const awalHariIni = new Date(sekarang)
-        awalHariIni.setHours(0, 0, 0, 0)
-
-        const akhirHariIni = new Date(sekarang)
-        akhirHariIni.setHours(23, 59, 59, 999)
-
-        const lastAttendance = await Attendance.findOne({
-            where: {
-                user_id: user.id,
-                waktu: {
-                    [Op.between]: [
-                        awalHariIni,
-                        akhirHariIni
-                    ]
-                }
-            },
-            order: [['waktu', 'DESC']]
-        })
-
-
-        if (lastAttendance) {
-            return res.status(400).json({
-                message: 'Anda sudah melakukan presensi hari ini!'
-            })
-        }
-
-
-        // ==========================================
-        // WAKTU WIB
-        // ==========================================
-        const now = new Date()
-
-        const formatter = new Intl.DateTimeFormat('id-ID', {
-            timeZone: 'Asia/Jakarta',
-            hour: 'numeric',
-            minute: 'numeric',
-            hour12: false
-        })
-
-        const parts = formatter.formatToParts(now)
-
-        let jamWIB = 0
-        let menitWIB = 0
-
-        parts.forEach(p => {
-            if (p.type === 'hour') {
-                jamWIB = parseInt(p.value, 10)
-            }
-
-            if (p.type === 'minute') {
-                menitWIB = parseInt(p.value, 10)
-            }
-        })
-
-        if (jamWIB === 24) {
-            jamWIB = 0
-        }
-
-
-        const totalMenit = (jamWIB * 60) + menitWIB
-        const shift = (user.shift || 'pagi').toLowerCase()
-
-
-        // ==========================================
-        // VALIDASI SEBELUM JAM SHIFT
-        // ==========================================
-
-        // SHIFT PAGI
-        if (shift === 'pagi') {
-
-            const jamMulaiPagi = 8 * 60
-
-            if (totalMenit < jamMulaiPagi) {
-                return res.status(400).json({
-                    message:
-                        'Presensi gagal! Belum waktunya absen. Shift Pagi dimulai pukul 08:00 WIB.'
-                })
-            }
-        }
-
-        // SHIFT SIANG
-        else if (shift === 'siang') {
-
-            const jamMulaiSiang = 13 * 60
-
-            if (totalMenit < jamMulaiSiang) {
-                return res.status(400).json({
-                    message:
-                        'Presensi gagal! Belum waktunya absen. Shift Siang dimulai pukul 13:00 WIB.'
-                })
-            }
-        }
-
-        // SHIFT MALAM
-        else if (shift === 'sore' || shift === 'malam') {
-
-            const jamMulaiMalam = 21 * 60
-            const jamSelesaiMalam = 5 * 60
-
-            if (
-                totalMenit > jamSelesaiMalam &&
-                totalMenit < jamMulaiMalam
-            ) {
-                return res.status(400).json({
-                    message:
-                        'Presensi gagal! Belum waktunya absen. Shift Malam dimulai pukul 21:00 WIB.'
-                })
-            }
-        }
-
-
-        // ==========================================
-        // HITUNG STATUS
-        // ==========================================
-        const statusTeks =
-            hitungStatusKeterlambatan(now, shift)
-
-
-        // ==========================================
-        // TOKEN YANG DISIMPAN
-        // ==========================================
-        const tokenYangDisimpan =
-            dynamic_token || qr_token
-
-
-        // ==========================================
-        // SIMPAN PRESENSI
-        // ==========================================
-        await Attendance.create({
-            user_id: user.id,
-            qr_token: tokenYangDisimpan,
-            latitude: latitude,
-            longitude: longitude,
-            statusTelat: statusTeks,
-            waktu: now
-        })
-
-
-        // ==========================================
-        // RESPONSE
-        // ==========================================
-        res.json({
-            message: `Absensi berhasil! Status: ${statusTeks}`,
-            status: statusTeks
-        })
-
-
-    } catch (error) {
-
-        console.error(
-            'Error proses absensi:',
-            error
-        )
-
-        res.status(500).json({
-            message: 'Terjadi kesalahan server.'
-        })
-    }
-})
-
-
-// ==========================================
-// DASHBOARD KARYAWAN
-// ==========================================
-router.get('/dashboard/:id', async (req, res) => {
-
-    try {
-
-        const userId = req.params.id
-
-        const currentUser =
-            await User.findByPk(userId)
-
-        if (!currentUser) {
-            return res.status(404).send(
-                'Karyawan tidak ditemukan'
-            )
-        }
-
-
-        const attendancesRaw =
-            await Attendance.findAll({
-                where: {
-                    user_id: userId
-                },
-                order: [
-                    ['waktu', 'DESC']
-                ]
-            })
-
-
-        const attendances =
-            attendancesRaw.map(att => {
-
-                const data =
-                    att.toJSON ?
-                        att.toJSON() :
-                        att
-
-                return {
-                    ...data,
-
-                    statusTelat:
-                        hitungStatusKeterlambatan(
-                            data.waktu,
-                            currentUser.shift || 'pagi'
-                        )
-                }
-            })
-
-
-        const leaves =
-            await Leave.findAll({
-                where: {
-                    user_id: userId
-                },
-                order: [
-                    ['createdAt', 'DESC']
-                ]
-            })
-
-
-        const renderData = {
-
-            currentUser:
-                currentUser.toJSON ?
-                    currentUser.toJSON() :
-                    currentUser,
-
-            user:
-                req.session &&
-                req.session.user ?
-                    req.session.user :
-                    currentUser,
-
-            attendances,
-
-            leaves
-        }
-
-
-        res.render(
-            'dashboard',
-            renderData,
-            (err, html) => {
-
-                if (err) {
-                    return res.render(
-                        'karyawan/dashboard',
-                        renderData
-                    )
-                }
-
-                res.send(html)
-            }
-        )
-
-    } catch (error) {
-
-        console.error(
-            'Error Dashboard Karyawan:',
-            error
-        )
-
-        res.status(500).send(
-            'Gagal memuat dashboard karyawan'
-        )
-    }
-})
-
-
-// ==========================================
-// HALAMAN SCAN
-// ==========================================
-router.get('/scan', async (req, res) => {
-
-    try {
-
-        res.render('scan')
-
-    } catch (error) {
-
-        console.error(
-            'Error scan:',
-            error
-        )
-
-        res.status(500).send(
-            'Gagal memuat halaman scan'
-        )
-    }
-})
-
-
-// ==========================================
-// FORM PENGAJUAN IZIN
-// ==========================================
-router.get('/leave/new', (req, res) => {
-
-    const loggedInUser =
-        (req.session && req.session.user)
-            ? req.session.user
-            : {
-                id: 1,
-                nama: 'Karyawan',
-                shift: 'Pagi'
-            }
-
-    res.render(
-        'leave_form',
-        {
-            currentUser: loggedInUser
-        }
-    )
-})
-
-
-router.post('/leave/store', async (req, res) => {
-
-    try {
-
-        await Leave.create({
-
-            user_id:
-                req.body.user_id,
-
-            jenis:
-                req.body.jenis,
-
-            tanggal_mulai:
-                req.body.tanggal_mulai,
-
-            tanggal_selesai:
-                req.body.tanggal_selesai,
-
-            alasan:
-                req.body.alasan,
-
-            status:
-                'Pending'
-        })
-
-
-        res.redirect(
-            '/dashboard/' +
-            req.body.user_id
-        )
-
-    } catch (error) {
-
-        console.error(
-            'Error pengajuan izin:',
-            error
-        )
-
-        res.status(500).send(
-            'Gagal memproses pengajuan izin'
-        )
-    }
-})
-
-
-// ==========================================
-// ADMIN - KELOLA IZIN
-// ==========================================
-router.get('/admin/leaves', async (req, res) => {
-
-    try {
-
-        const leaves =
-            await Leave.findAll({
-
-                include: [
-                    {
-                        model: User
-                    }
-                ],
-
-                order: [
-                    ['createdAt', 'DESC']
-                ]
-            })
-
-
-        res.render(
-            'admin/leaves',
-            (err, html) => {
-
-                if (err) {
-                    return res.render(
-                        'admin-leaves',
-                        {
-                            leaves
-                        }
-                    )
-                }
-
-                res.send(html)
-            }
-        )
-
-    } catch (error) {
-
-        console.error(
-            'Error admin leaves:',
-            error
-        )
-
-        res.status(500).send(
-            'Gagal memuat data pengajuan izin'
-        )
-    }
-})
-
 
 router.post(
-    '/admin/leaves/:id/action',
+    '/attendance',
+    isKaryawan,
     async (req, res) => {
 
         try {
 
             const {
-                statusAction
+                qr_token,
+                dynamic_token,
+                latitude,
+                longitude
             } = req.body
 
 
-            await Leave.update(
+            // ==========================================
+            // AMBIL USER DARI SESSION
+            // ==========================================
 
-                {
-                    status:
-                        statusAction
-                },
+            const sessionUserId =
+                req.session.user.id
 
-                {
-                    where: {
-                        id:
-                            req.params.id
-                    }
+            const loggedInUser =
+                await User.findByPk(sessionUserId)
+
+
+            if (!loggedInUser) {
+
+                return res.status(404).json({
+                    message:
+                        'Data karyawan tidak ditemukan.'
+                })
+
+            }
+
+
+            let user = loggedInUser
+            let tokenYangDisimpan = null
+
+
+            // ==========================================
+            // QR DINAMIS
+            // ==========================================
+
+            if (dynamic_token) {
+
+                let decoded
+
+                try {
+
+                    decoded =
+                        jwt.verify(
+                            dynamic_token,
+                            QR_SECRET
+                        )
+
+                } catch (error) {
+
+                    console.error(
+                        'QR JWT ERROR:',
+                        error.message
+                    )
+
+                    return res.status(400).json({
+                        message:
+                            'QR Dinamis sudah kedaluwarsa atau tidak valid.'
+                    })
+
                 }
-            )
 
 
-            res.redirect(
-                '/admin/leaves'
-            )
+                // Pastikan token memang token absensi
+                if (
+                    !decoded ||
+                    decoded.type !==
+                    'dynamic_attendance_qr'
+                ) {
+
+                    return res.status(400).json({
+                        message:
+                            'QR Dinamis tidak valid.'
+                    })
+
+                }
+
+
+                // Identitas karyawan berasal dari
+                // akun yang sedang login
+                user = loggedInUser
+
+
+                tokenYangDisimpan =
+                    `WFA_DYNAMIC:${dynamic_token}`
+
+            }
+
+
+            // ==========================================
+            // QR PRIBADI
+            // ==========================================
+
+            else if (qr_token) {
+
+                const qrUser =
+                    await User.findOne({
+                        where: {
+                            qr_token: qr_token
+                        }
+                    })
+
+
+                if (!qrUser) {
+
+                    return res.status(400).json({
+                        message:
+                            'QR Code tidak valid.'
+                    })
+
+                }
+
+
+                // QR pribadi hanya boleh dipakai
+                // oleh pemilik akun
+                if (
+                    Number(qrUser.id) !==
+                    Number(loggedInUser.id)
+                ) {
+
+                    return res.status(403).json({
+                        message:
+                            'QR Code bukan milik akun yang sedang login.'
+                    })
+
+                }
+
+
+                user = qrUser
+
+                tokenYangDisimpan =
+                    qr_token
+
+            }
+
+
+            // ==========================================
+            // QR TIDAK ADA
+            // ==========================================
+
+            else {
+
+                return res.status(400).json({
+                    message:
+                        'QR Code tidak ditemukan.'
+                })
+
+            }
+
+
+            // ==========================================
+            // VALIDASI GPS
+            // ==========================================
+
+            if (
+                latitude === undefined ||
+                latitude === null ||
+                longitude === undefined ||
+                longitude === null
+            ) {
+
+                return res.status(400).json({
+                    message:
+                        'Lokasi GPS tidak ditemukan. Silakan izinkan akses lokasi.'
+                })
+
+            }
+
+
+            const lat =
+                parseFloat(latitude)
+
+            const lng =
+                parseFloat(longitude)
+
+
+            if (
+                Number.isNaN(lat) ||
+                Number.isNaN(lng)
+            ) {
+
+                return res.status(400).json({
+                    message:
+                        'Koordinat GPS tidak valid.'
+                })
+
+            }
+
+
+            // ==========================================
+            // WAKTU SEKARANG
+            // ==========================================
+
+            const now = new Date()
+
+
+            // ==========================================
+            // CEK SUDAH ABSEN HARI INI
+            // ==========================================
+
+            const formatterTanggal =
+                new Intl.DateTimeFormat(
+                    'en-CA',
+                    {
+                        timeZone:
+                            'Asia/Jakarta',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                    }
+                )
+
+
+            const tanggalWIB =
+                formatterTanggal.format(now)
+
+
+            const awalHariIni =
+                new Date(
+                    `${tanggalWIB}T00:00:00+07:00`
+                )
+
+
+            const akhirHariIni =
+                new Date(
+                    `${tanggalWIB}T23:59:59.999+07:00`
+                )
+
+
+            const lastAttendance =
+                await Attendance.findOne({
+
+                    where: {
+
+                        user_id:
+                            user.id,
+
+                        waktu: {
+                            [Op.between]: [
+                                awalHariIni,
+                                akhirHariIni
+                            ]
+                        }
+
+                    },
+
+                    order: [
+                        ['waktu', 'DESC']
+                    ]
+
+                })
+
+
+            if (lastAttendance) {
+
+                return res.status(400).json({
+                    message:
+                        'Anda sudah melakukan presensi hari ini!'
+                })
+
+            }
+
+
+            // ==========================================
+            // AMBIL JAM WIB
+            // ==========================================
+
+            const formatterJam =
+                new Intl.DateTimeFormat(
+                    'id-ID',
+                    {
+                        timeZone:
+                            'Asia/Jakarta',
+                        hour: 'numeric',
+                        minute: 'numeric',
+                        hour12: false
+                    }
+                )
+
+
+            const timeParts =
+                formatterJam.formatToParts(now)
+
+
+            let jamWIB = 0
+            let menitWIB = 0
+
+
+            timeParts.forEach(part => {
+
+                if (part.type === 'hour') {
+                    jamWIB =
+                        parseInt(
+                            part.value,
+                            10
+                        )
+                }
+
+                if (part.type === 'minute') {
+                    menitWIB =
+                        parseInt(
+                            part.value,
+                            10
+                        )
+                }
+
+            })
+
+
+            if (jamWIB === 24) {
+                jamWIB = 0
+            }
+
+
+            const totalMenit =
+                (jamWIB * 60) +
+                menitWIB
+
+
+            const shift =
+                (user.shift || 'Pagi')
+                    .toLowerCase()
+
+
+            // ==========================================
+            // VALIDASI JAM SEBELUM SHIFT
+            // ==========================================
+
+            // SHIFT PAGI
+            if (shift === 'pagi') {
+
+                const mulai =
+                    8 * 60
+
+                if (
+                    totalMenit < mulai
+                ) {
+
+                    return res.status(400).json({
+                        message:
+                            'Presensi gagal! Belum waktunya absen. Shift Pagi dimulai pukul 08:00 WIB.'
+                    })
+
+                }
+
+            }
+
+
+            // SHIFT SIANG
+            else if (shift === 'siang') {
+
+                const mulai =
+                    13 * 60
+
+                if (
+                    totalMenit < mulai
+                ) {
+
+                    return res.status(400).json({
+                        message:
+                            'Presensi gagal! Belum waktunya absen. Shift Siang dimulai pukul 13:00 WIB.'
+                    })
+
+                }
+
+            }
+
+
+            // SHIFT MALAM
+            else if (
+                shift === 'malam' ||
+                shift === 'sore'
+            ) {
+
+                const mulai =
+                    21 * 60
+
+                const selesai =
+                    5 * 60
+
+
+                if (
+                    totalMenit > selesai &&
+                    totalMenit < mulai
+                ) {
+
+                    return res.status(400).json({
+                        message:
+                            'Presensi gagal! Belum waktunya absen. Shift Malam dimulai pukul 21:00 WIB.'
+                    })
+
+                }
+
+            }
+
+
+            // ==========================================
+            // HITUNG STATUS
+            // ==========================================
+
+            const statusTeks =
+                hitungStatusKeterlambatan(
+                    now,
+                    user.shift
+                )
+
+
+            // ==========================================
+            // SIMPAN ABSENSI
+            // ==========================================
+
+            await Attendance.create({
+
+                user_id:
+                    user.id,
+
+                qr_token:
+                    tokenYangDisimpan,
+
+                latitude:
+                    lat,
+
+                longitude:
+                    lng,
+
+                statusTelat:
+                    statusTeks,
+
+                waktu:
+                    now
+
+            })
+
+
+            // ==========================================
+            // RESPONSE
+            // ==========================================
+
+            return res.json({
+
+                success: true,
+
+                message:
+                    `Absensi berhasil! Status: ${statusTeks}`,
+
+                status:
+                    statusTeks
+
+            })
+
 
         } catch (error) {
 
             console.error(
-                'Error aksi izin:',
+                'ERROR PROSES ABSENSI:',
                 error
             )
 
-            res.status(500).send(
-                'Gagal memperbarui status pengajuan'
-            )
+            return res.status(500).json({
+                message:
+                    'Terjadi kesalahan server.'
+            })
+
         }
+
     }
 )
 
 
-router.post(
-    '/admin/leaves/delete/:id',
+// ==========================================
+// 2. DASHBOARD KARYAWAN
+// ==========================================
+
+router.get(
+    '/dashboard/:id',
     async (req, res) => {
 
         try {
 
-            await Leave.destroy({
+            const userId =
+                req.params.id
 
-                where: {
-                    id:
-                        req.params.id
+
+            const currentUser =
+                await User.findByPk(userId)
+
+
+            if (!currentUser) {
+
+                return res.status(404).send(
+                    'Karyawan tidak ditemukan'
+                )
+
+            }
+
+
+            const attendancesRaw =
+                await Attendance.findAll({
+
+                    where: {
+                        user_id: userId
+                    },
+
+                    order: [
+                        ['waktu', 'DESC']
+                    ]
+
+                })
+
+
+            const attendances =
+                attendancesRaw.map(att => {
+
+                    const data =
+                        att.toJSON
+                            ? att.toJSON()
+                            : att
+
+
+                    return {
+
+                        ...data,
+
+                        statusTelat:
+                            hitungStatusKeterlambatan(
+                                data.waktu,
+                                currentUser.shift
+                            )
+
+                    }
+
+                })
+
+
+            const leaves =
+                await Leave.findAll({
+
+                    where: {
+                        user_id: userId
+                    },
+
+                    order: [
+                        ['createdAt', 'DESC']
+                    ]
+
+                })
+
+
+            const renderData = {
+
+                currentUser:
+                    currentUser.toJSON
+                        ? currentUser.toJSON()
+                        : currentUser,
+
+                user:
+                    req.session &&
+                    req.session.user
+                        ? req.session.user
+                        : currentUser,
+
+                attendances,
+
+                leaves
+
+            }
+
+
+            res.render(
+                'dashboard',
+                renderData,
+                (err, html) => {
+
+                    if (err) {
+
+                        return res.render(
+                            'karyawan/dashboard',
+                            renderData
+                        )
+
+                    }
+
+                    res.send(html)
+
                 }
+            )
+
+
+        } catch (error) {
+
+            console.error(
+                'Error Dashboard Karyawan:',
+                error
+            )
+
+            res.status(500).send(
+                'Gagal memuat dashboard karyawan'
+            )
+
+        }
+
+    }
+)
+
+
+// ==========================================
+// 3. HALAMAN SCAN
+// ==========================================
+
+router.get(
+    '/scan',
+    isKaryawan,
+    (req, res) => {
+
+        res.render('scan')
+
+    }
+)
+
+
+// ==========================================
+// 4. FORM IZIN
+// ==========================================
+
+router.get(
+    '/leave/new',
+    isKaryawan,
+    (req, res) => {
+
+        res.render(
+            'leave_form',
+            {
+                currentUser:
+                    req.session.user
+            }
+        )
+
+    }
+)
+
+
+// ==========================================
+// 5. SIMPAN IZIN
+// ==========================================
+
+router.post(
+    '/leave/store',
+    isKaryawan,
+    async (req, res) => {
+
+        try {
+
+            const userId =
+                req.session.user.id
+
+
+            await Leave.create({
+
+                user_id:
+                    userId,
+
+                jenis:
+                    req.body.jenis,
+
+                tanggal_mulai:
+                    req.body.tanggal_mulai,
+
+                tanggal_selesai:
+                    req.body.tanggal_selesai,
+
+                alasan:
+                    req.body.alasan,
+
+                status:
+                    'Pending'
+
             })
 
 
             res.redirect(
-                '/admin/leaves'
+                '/dashboard/' +
+                userId
             )
+
 
         } catch (error) {
 
             console.error(
-                'Error hapus izin:',
+                'Error pengajuan izin:',
                 error
             )
 
             res.status(500).send(
-                'Gagal menghapus pengajuan izin'
+                'Gagal memproses pengajuan izin'
             )
+
         }
+
     }
 )
 
 
 // ==========================================
-// QR DINAMIS ADMIN
+// 6. QR DINAMIS ADMIN
 // ==========================================
+//
+// QR UNIVERSAL
+//
+// Admin menampilkan 1 QR.
+// Semua karyawan bisa scan QR yang sama.
+//
+// Identitas karyawan TIDAK berasal dari QR.
+// Identitas diambil dari session login.
+//
+// Token berlaku 5 menit.
+// ==========================================
+
 router.get(
     '/admin/qr-dinamis',
+    isAdmin,
     async (req, res) => {
 
         try {
 
-            const awalHariIni =
-                new Date()
+            // ==========================================
+            // AMBIL ABSENSI HARI INI
+            // ==========================================
 
-            awalHariIni.setHours(
-                0,
-                0,
-                0,
-                0
-            )
+            const formatterTanggal =
+                new Intl.DateTimeFormat(
+                    'en-CA',
+                    {
+                        timeZone:
+                            'Asia/Jakarta',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                    }
+                )
+
+
+            const tanggalWIB =
+                formatterTanggal.format(
+                    new Date()
+                )
+
+
+            const awalHariIni =
+                new Date(
+                    `${tanggalWIB}T00:00:00+07:00`
+                )
 
 
             const attendances =
@@ -764,62 +972,65 @@ router.get(
                     order: [
                         ['waktu', 'DESC']
                     ]
+
                 })
 
 
-            /*
-             * QR DINAMIS UNIVERSAL
-             *
-             * QR ini bukan milik satu karyawan.
-             * Semua karyawan boleh scan.
-             *
-             * Format:
-             * WFA_DYNAMIC:TOKEN
-             */
+            // ==========================================
+            // BUAT JWT QR DINAMIS
+            // ==========================================
 
-            const crypto =
-                require('crypto')
+            const dynamicToken =
+                jwt.sign(
+
+                    {
+                        type:
+                            'dynamic_attendance_qr',
+
+                        createdAt:
+                            Date.now()
+
+                    },
+
+                    QR_SECRET,
+
+                    {
+                        expiresIn:
+                            '5m'
+                    }
+
+                )
 
 
-            const token =
-                crypto
-                    .randomBytes(24)
-                    .toString('hex')
-
+            // ==========================================
+            // DATA YANG MASUK KE QR
+            // ==========================================
 
             const qrData =
-                `WFA_DYNAMIC:${token}`
+                `WFA_DYNAMIC:${dynamicToken}`
 
+
+            // ==========================================
+            // RENDER
+            // ==========================================
 
             const renderData = {
+
                 attendances,
+
                 qrData,
+
                 user:
-                    req.session &&
                     req.session.user
-                        ? req.session.user
-                        : {
-                            nama: 'Admin'
-                        }
+
             }
 
 
             res.render(
-                'admin/qr-dinamis',
-                renderData,
-                (err, html) => {
-
-                    if (err) {
-
-                        return res.render(
-                            'admin-qr',
-                            renderData
-                        )
-                    }
-
-                    res.send(html)
-                }
+                'admin-qr',
+                renderData
             )
+
 
         } catch (error) {
 
@@ -829,226 +1040,13 @@ router.get(
             )
 
             res.status(500).send(
-                'Gagal memuat halaman QR Dinamis Admin'
+                'Gagal memuat QR Dinamis Admin'
             )
+
         }
+
     }
 )
-
-
-// ==========================================
-// DASHBOARD ADMIN
-// ==========================================
-router.get('/admin', async (req, res) => {
-
-    try {
-
-        const attendancesRaw =
-            await Attendance.findAll({
-
-                include: [
-                    {
-                        model: User
-                    }
-                ],
-
-                order: [
-                    ['waktu', 'DESC']
-                ]
-            }).catch(() => [])
-
-
-        const users =
-            await User.findAll()
-                .catch(() => [])
-
-
-        const pendingLeaves =
-            await Leave.findAll({
-
-                where: {
-                    status: 'Pending'
-                }
-
-            }).catch(() => [])
-
-
-        let jumlahTerlambatHariIni = 0
-
-        const hariIniTeks =
-            new Date().toDateString()
-
-
-        const totalShiftPagi =
-            users.filter(
-                u =>
-                    u.shift &&
-                    u.shift.toLowerCase() === 'pagi'
-            ).length
-
-
-        const totalShiftSiang =
-            users.filter(
-                u =>
-                    u.shift &&
-                    u.shift.toLowerCase() === 'siang'
-            ).length
-
-
-        const totalShiftSore =
-            users.filter(
-                u =>
-                    u.shift &&
-                    (
-                        u.shift.toLowerCase() === 'sore' ||
-                        u.shift.toLowerCase() === 'malam'
-                    )
-            ).length
-
-
-        const attendances =
-            attendancesRaw.map(att => {
-
-                const data =
-                    att.toJSON ?
-                        att.toJSON() :
-                        att
-
-
-                const matchUser =
-                    data.User ||
-                    users.find(
-                        u =>
-                            u.id === data.user_id
-                    )
-
-
-                const shiftKaryawan =
-                    matchUser &&
-                    matchUser.shift
-                        ? matchUser.shift
-                        : 'pagi'
-
-
-                const statusTeks =
-                    hitungStatusKeterlambatan(
-                        data.waktu,
-                        shiftKaryawan
-                    )
-
-
-                if (
-                    statusTeks === 'Terlambat' &&
-                    new Date(data.waktu)
-                        .toDateString() ===
-                        hariIniTeks
-                ) {
-
-                    jumlahTerlambatHariIni++
-                }
-
-
-                return {
-
-                    ...data,
-
-                    statusTelat:
-                        statusTeks,
-
-                    User:
-                        matchUser
-                            ? (
-                                matchUser.toJSON
-                                    ? matchUser.toJSON()
-                                    : matchUser
-                            )
-                            : {
-                                nama: 'Karyawan'
-                            }
-                }
-            })
-
-
-        const stats = {
-
-            totalKaryawan:
-                users.length,
-
-            hadir:
-                attendances.filter(
-                    a =>
-                        new Date(a.waktu)
-                            .toDateString() ===
-                        hariIniTeks
-                ).length,
-
-            terlambat:
-                jumlahTerlambatHariIni,
-
-            izinSakitCuti:
-                pendingLeaves.length,
-
-            shiftPagi:
-                totalShiftPagi,
-
-            shiftSiang:
-                totalShiftSiang,
-
-            shiftSore:
-                totalShiftSore,
-
-            shiftMalam:
-                totalShiftSore
-        }
-
-
-        const renderPayload = {
-
-            attendances,
-
-            stats,
-
-            user:
-                (
-                    req.session &&
-                    req.session.user
-                )
-                    ? req.session.user
-                    : {
-                        nama: 'Admin'
-                    }
-        }
-
-
-        res.render(
-            'admin/dashboard',
-            renderPayload,
-            (err, html) => {
-
-                if (err) {
-
-                    return res.render(
-                        'admin/admin',
-                        renderPayload
-                    )
-                }
-
-                res.send(html)
-            }
-        )
-
-    } catch (error) {
-
-        console.error(
-            'Error Dashboard Admin:',
-            error
-        )
-
-        res.status(500).send(
-            'Gagal memuat dashboard admin'
-        )
-    }
-})
 
 
 module.exports = router
