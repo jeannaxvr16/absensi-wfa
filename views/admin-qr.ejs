@@ -27,97 +27,209 @@
             --primary-green: #00966c;
             --bg-light: #f4f6f9;
             --sidebar-dark: #1e2530;
+            --text-muted: #8a92a6;
         }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: var(--bg-light);
             color: #232d42;
+            margin: 0;
+            padding: 0;
         }
+
+        /* =====================================================
+           SIDEBAR
+        ===================================================== */
 
         .sidebar {
             position: fixed;
             top: 0;
             bottom: 0;
             left: 0;
+
             width: 260px;
+
             background-color: var(--sidebar-dark);
+
             z-index: 100;
+
             padding-top: 1rem;
         }
 
         .brand-logo {
             padding: 0.5rem 1.5rem 1.5rem 1.5rem;
+
             font-size: 1.35rem;
+
             font-weight: 700;
+
             color: #fff;
+
             display: flex;
             align-items: center;
+
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .brand-icon-wrapper {
             background-color: var(--primary-green);
+
             width: 35px;
             height: 35px;
+
             border-radius: 8px;
+
             display: flex;
             align-items: center;
             justify-content: center;
+
             margin-right: 10px;
         }
 
         .sidebar-menu {
             list-style: none;
+
             padding: 1.5rem 0;
+
             margin: 0;
         }
 
         .menu-item a {
             display: flex;
             align-items: center;
+
             padding: 0.8rem 1.5rem;
+
             color: #a0aec0;
+
             text-decoration: none;
+
             font-weight: 500;
+
             font-size: 0.95rem;
+
+            transition: 0.2s;
+        }
+
+        .menu-item a:hover {
+            color: #fff;
+
+            background-color: rgba(255, 255, 255, 0.03);
         }
 
         .menu-item.active a {
             border-left: 4px solid var(--primary-green);
+
             background-color: rgba(0, 150, 108, 0.08);
+
             color: #fff;
+
             font-weight: 600;
         }
 
+        .menu-item i {
+            margin-right: 0.8rem;
+
+            font-size: 1.1rem;
+        }
+
+        /* =====================================================
+           MAIN CONTENT
+        ===================================================== */
+
         .main-content {
             margin-left: 260px;
+
             min-height: 100vh;
-            padding: 2rem;
+
+            display: flex;
+
+            flex-direction: column;
         }
+
+        /* =====================================================
+           TOP NAVBAR
+        ===================================================== */
+
+        .top-navbar {
+            background-color: #fff;
+
+            height: 70px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            padding: 0 2rem;
+
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .admin-name {
+            font-weight: 600;
+
+            font-size: 0.9rem;
+        }
+
+        /* =====================================================
+           CONTENT
+        ===================================================== */
+
+        .content-body {
+            padding: 2rem;
+
+            flex: 1;
+        }
+
+        .grid-card {
+            background: #fff;
+
+            border-radius: 16px;
+
+            border: 1px solid #e9ecef;
+
+            padding: 1.5rem;
+
+            box-shadow: 0 4px 12px rgba(0,0,0,0.01);
+        }
+
+        /* =====================================================
+           QR
+        ===================================================== */
 
         .qr-card {
             border: none;
+
             border-radius: 20px;
         }
 
         .qr-wrapper {
             display: inline-flex;
+
             justify-content: center;
             align-items: center;
+
             padding: 15px;
+
             background: #fff;
+
             border-radius: 15px;
+
             border: 1px solid #e5e7eb;
         }
 
         .qr-image {
             width: 240px;
             height: 240px;
+
             object-fit: contain;
         }
 
         @keyframes pulse {
+
             0% {
                 opacity: 0.6;
             }
@@ -129,28 +241,53 @@
             100% {
                 opacity: 0.6;
             }
+
         }
 
         .animate-pulse {
             animation: pulse 2s infinite;
         }
 
+        /* =====================================================
+           TABLE
+        ===================================================== */
+
+        .table > :not(caption) > * > * {
+            padding: 0.85rem 1rem;
+
+            vertical-align: middle;
+        }
+
+        /* =====================================================
+           RESPONSIVE
+        ===================================================== */
+
         @media (max-width: 768px) {
 
             .sidebar {
                 position: relative;
+
                 width: 100%;
+
                 height: auto;
             }
 
             .main-content {
                 margin-left: 0;
+            }
+
+            .top-navbar {
+                padding: 0 1rem;
+            }
+
+            .content-body {
                 padding: 1rem;
             }
 
         }
 
     </style>
+
 </head>
 
 <body>
@@ -161,10 +298,14 @@
 
     <div class="sidebar">
 
+        <!-- LOGO -->
+
         <div class="brand-logo">
 
             <div class="brand-icon-wrapper">
+
                 <i class="bi bi-fingerprint text-white fs-5"></i>
+
             </div>
 
             <span>Absensi</span>
@@ -172,35 +313,97 @@
         </div>
 
 
+        <!-- MENU -->
+
         <ul class="sidebar-menu">
+
+            <!-- DASHBOARD -->
 
             <li class="menu-item">
 
                 <a href="/admin">
-                    <i class="bi bi-grid-1x2 me-2"></i>
+
+                    <i class="bi bi-grid-1x2"></i>
+
                     Dashboard
+
                 </a>
 
             </li>
 
+
+            <!-- QR DINAMIS -->
 
             <li class="menu-item active">
 
                 <a href="/admin/qr-dinamis">
-                    <i class="bi bi-qr-code-scan me-2"></i>
+
+                    <i class="bi bi-qr-code-scan"></i>
+
                     QR Dinamis
+
                 </a>
 
             </li>
 
+
+            <!-- IZIN / CUTI / SAKIT -->
 
             <li class="menu-item">
 
                 <a href="/admin/leaves">
 
-                    <i class="bi bi-calendar2-check me-2"></i>
+                    <i class="bi bi-calendar2-check"></i>
 
-                    Izin / Cuti
+                    Izin / Cuti / Sakit
+
+                </a>
+
+            </li>
+
+
+            <!-- MASTER DATA -->
+
+            <li class="menu-item">
+
+                <a href="/admin/master-data">
+
+                    <i class="bi bi-database"></i>
+
+                    Master Data
+
+                </a>
+
+            </li>
+
+
+            <!-- LAPORAN -->
+
+            <li class="menu-item">
+
+                <a href="/admin/reports">
+
+                    <i class="bi bi-file-earmark-text"></i>
+
+                    Laporan
+
+                </a>
+
+            </li>
+
+
+            <!-- KELUAR -->
+
+            <li class="menu-item mt-4">
+
+                <a
+                    href="/logout"
+                    class="text-danger fw-semibold"
+                >
+
+                    <i class="bi bi-box-arrow-right text-danger"></i>
+
+                    Keluar
 
                 </a>
 
@@ -217,286 +420,342 @@
 
     <div class="main-content">
 
-        <div class="container-fluid">
 
-            <div class="row g-4">
+        <!-- =================================================
+             TOP NAVBAR
+        ================================================== -->
 
+        <header class="top-navbar">
 
-                <!-- =================================================
-                     QR DINAMIS
-                ================================================== -->
+            <h5 class="fw-bold mb-0">
 
-                <div class="col-lg-4">
+                QR Dinamis Absensi
 
-                    <div class="card qr-card shadow-sm p-4 bg-white text-center">
-
-                        <h5 class="fw-bold mb-2">
-
-                            <i class="bi bi-qr-code text-success me-2"></i>
-
-                            QR Absensi Hari Ini
-
-                        </h5>
+            </h5>
 
 
-                        <p class="text-muted small mb-4">
+            <div class="d-flex align-items-center gap-3">
 
-                            QR ini digunakan oleh karyawan
-                            untuk melakukan absensi.
+                <i class="bi bi-bell text-secondary"></i>
 
-                        </p>
+                <i class="bi bi-envelope text-secondary"></i>
 
+                <span class="admin-name">
 
-                        <!-- QR IMAGE -->
+                    <%= typeof user !== 'undefined' && user
+                        ? user.nama
+                        : 'Admin'
+                    %>
 
-                        <div class="qr-wrapper mb-3">
+                </span>
 
-                            <img
-                                src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=<%= encodeURIComponent(qrData) %>"
-                                alt="QR Code Absensi Dinamis"
-                                class="qr-image"
-                            >
+            </div>
 
-                        </div>
-
-
-                        <!-- STATUS -->
-
-                        <div>
-
-                            <span class="badge bg-danger animate-pulse py-2 px-3 rounded-pill">
-
-                                <i class="bi bi-broadcast me-1"></i>
-
-                                QR Dinamis Aktif
-
-                            </span>
-
-                        </div>
+        </header>
 
 
-                        <div class="alert alert-warning mt-3 mb-0 small">
+        <!-- =================================================
+             CONTENT BODY
+        ================================================== -->
 
-                            <i class="bi bi-clock-history me-1"></i>
+        <main class="content-body">
 
-                            QR berlaku selama
-                            <strong>5 menit</strong>.
+            <div class="container-fluid">
 
-                            <br>
-
-                            Setelah kedaluwarsa,
-                            <strong>refresh halaman</strong>
-                            untuk membuat QR baru.
-
-                        </div>
+                <div class="row g-4">
 
 
-                        <div class="alert alert-info mt-3 mb-0 small">
+                    <!-- =================================================
+                         QR DINAMIS
+                    ================================================== -->
 
-                            <i class="bi bi-info-circle me-1"></i>
+                    <div class="col-lg-4">
 
-                            Karyawan harus login ke akun masing-masing
-                            sebelum melakukan pemindaian QR.
+                        <div class="grid-card text-center">
+
+
+                            <h5 class="fw-bold mb-2">
+
+                                <i class="bi bi-qr-code text-success me-2"></i>
+
+                                QR Absensi Hari Ini
+
+                            </h5>
+
+
+                            <p class="text-muted small mb-4">
+
+                                QR ini digunakan oleh karyawan
+                                untuk melakukan absensi.
+
+                            </p>
+
+
+                            <!-- QR IMAGE -->
+
+                            <div class="qr-wrapper mb-3">
+
+                                <img
+                                    src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=<%= encodeURIComponent(qrData) %>"
+                                    alt="QR Code Absensi Dinamis"
+                                    class="qr-image"
+                                >
+
+                            </div>
+
+
+                            <!-- STATUS -->
+
+                            <div>
+
+                                <span class="badge bg-danger animate-pulse py-2 px-3 rounded-pill">
+
+                                    <i class="bi bi-broadcast me-1"></i>
+
+                                    QR Dinamis Aktif
+
+                                </span>
+
+                            </div>
+
+
+                            <!-- INFO EXPIRED -->
+
+                            <div class="alert alert-warning mt-3 mb-0 small text-start">
+
+                                <i class="bi bi-clock-history me-1"></i>
+
+                                QR berlaku selama
+                                <strong>5 menit</strong>.
+
+                                <br>
+
+                                Setelah kedaluwarsa,
+                                <strong>refresh halaman</strong>
+                                untuk membuat QR baru.
+
+                            </div>
+
+
+                            <!-- INFO LOGIN -->
+
+                            <div class="alert alert-info mt-3 mb-0 small text-start">
+
+                                <i class="bi bi-info-circle me-1"></i>
+
+                                Karyawan harus login ke akun masing-masing
+                                sebelum melakukan pemindaian QR.
+
+                            </div>
+
 
                         </div>
 
                     </div>
 
-                </div>
+
+                    <!-- =================================================
+                         DAFTAR KEHADIRAN
+                    ================================================== -->
+
+                    <div class="col-lg-8">
+
+                        <div class="grid-card p-0 overflow-hidden">
 
 
-                <!-- =================================================
-                     DAFTAR KEHADIRAN
-                ================================================== -->
+                            <!-- HEADER -->
 
-                <div class="col-lg-8">
+                            <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
 
-                    <div class="card shadow-sm border-0 rounded-4 bg-white overflow-hidden">
+                                <div>
 
-                        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-0">
+                                    <h5 class="fw-bold m-0">
 
-                            <h5 class="fw-bold m-0 text-dark">
+                                        <i class="bi bi-people-fill text-success me-2"></i>
 
-                                <i class="bi bi-people-fill text-success me-2"></i>
+                                        Karyawan Hadir Hari Ini
 
-                                Karyawan Hadir Hari Ini
+                                    </h5>
 
-                            </h5>
+                                    <small class="text-muted">
 
+                                        Daftar karyawan yang sudah melakukan absensi
 
-                            <span class="badge bg-primary px-3 py-2 rounded-pill">
+                                    </small>
 
-                                <%= attendances.length %> Karyawan
-
-                            </span>
-
-                        </div>
+                                </div>
 
 
-                        <div class="table-responsive">
+                                <span class="badge bg-primary px-3 py-2 rounded-pill">
 
-                            <table class="table table-hover align-middle mb-0">
+                                    <%= attendances.length %> Karyawan
 
-                                <thead class="table-light">
+                                </span>
 
-                                    <tr>
-
-                                        <th class="ps-4">
-                                            Nama Karyawan
-                                        </th>
-
-                                        <th>
-                                            Email
-                                        </th>
-
-                                        <th>
-                                            Waktu Scan
-                                        </th>
-
-                                        <th class="pe-4 text-end">
-                                            Status
-                                        </th>
-
-                                    </tr>
-
-                                </thead>
+                            </div>
 
 
-                                <tbody>
+                            <!-- TABLE -->
+
+                            <div class="table-responsive">
+
+                                <table class="table table-hover align-middle mb-0">
+
+                                    <thead class="table-light">
+
+                                        <tr>
+
+                                            <th class="ps-4">
+
+                                                Nama Karyawan
+
+                                            </th>
+
+                                            <th>
+
+                                                Email
+
+                                            </th>
+
+                                            <th>
+
+                                                Waktu Scan
+
+                                            </th>
+
+                                            <th class="pe-4 text-end">
+
+                                                Status
+
+                                            </th>
+
+                                        </tr>
+
+                                    </thead>
 
 
-                                    <% if (attendances.length > 0) { %>
+                                    <tbody>
+
+                                        <% if (attendances && attendances.length > 0) { %>
 
 
-                                        <% attendances.forEach(absens => { %>
+                                            <% attendances.forEach(absens => { %>
+
+                                                <tr>
+
+                                                    <!-- NAMA -->
+
+                                                    <td class="fw-semibold ps-4">
+
+                                                        <%= absens.User
+                                                            ? absens.User.nama
+                                                            : 'Tidak Diketahui'
+                                                        %>
+
+                                                    </td>
+
+
+                                                    <!-- EMAIL -->
+
+                                                    <td class="text-muted">
+
+                                                        <%= absens.User
+                                                            ? absens.User.email
+                                                            : '-'
+                                                        %>
+
+                                                    </td>
+
+
+                                                    <!-- WAKTU -->
+
+                                                    <td>
+
+                                                        <span class="badge bg-light text-dark">
+
+                                                            <i class="bi bi-clock me-1 text-success"></i>
+
+                                                            <%= new Date(
+                                                                absens.waktu
+                                                            ).toLocaleTimeString(
+                                                                'id-ID',
+                                                                {
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit',
+                                                                    timeZone: 'Asia/Jakarta'
+                                                                }
+                                                            ) %>
+
+                                                            WIB
+
+                                                        </span>
+
+                                                    </td>
+
+
+                                                    <!-- STATUS -->
+
+                                                    <td class="pe-4 text-end">
+
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">
+
+                                                            Hadir
+
+                                                        </span>
+
+                                                    </td>
+
+                                                </tr>
+
+                                            <% }) %>
+
+
+                                        <% } else { %>
 
 
                                             <tr>
 
-                                                <td class="fw-bold text-secondary ps-4">
+                                                <td
+                                                    colspan="4"
+                                                    class="text-center text-muted py-5"
+                                                >
 
-                                                    <%= absens.User
-                                                        ? absens.User.nama
-                                                        : 'Tidak Diketahui'
-                                                    %>
+                                                    <i class="bi bi-qr-code-scan display-4 d-block mb-3 text-body-tertiary"></i>
 
-                                                </td>
-
-
-                                                <td class="text-muted">
-
-                                                    <%= absens.User
-                                                        ? absens.User.email
-                                                        : '-'
-                                                    %>
-
-                                                </td>
-
-
-                                                <td>
-
-                                                    <span class="badge bg-light text-dark">
-
-                                                        <i class="bi bi-clock me-1 text-success"></i>
-
-                                                        <%= new Date(
-                                                            absens.waktu
-                                                        ).toLocaleTimeString(
-                                                            'id-ID',
-                                                            {
-                                                                hour: '2-digit',
-                                                                minute: '2-digit'
-                                                            }
-                                                        ) %>
-
-                                                        WIB
-
-                                                    </span>
-
-                                                </td>
-
-
-                                                <td class="pe-4 text-end">
-
-
-                                                    <% if (
-                                                        absens.statusTelat &&
-                                                        absens.statusTelat
-                                                            .toLowerCase()
-                                                            .includes('terlambat')
-                                                    ) { %>
-
-
-                                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">
-
-                                                            Terlambat
-
-                                                        </span>
-
-
-                                                    <% } else { %>
-
-
-                                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">
-
-                                                            Tepat Waktu
-
-                                                        </span>
-
-
-                                                    <% } %>
-
+                                                    Belum ada karyawan yang melakukan
+                                                    absensi hari ini.
 
                                                 </td>
 
                                             </tr>
 
 
-                                        <% }) %>
+                                        <% } %>
 
+                                    </tbody>
 
-                                    <% } else { %>
+                                </table>
 
+                            </div>
 
-                                        <tr>
-
-                                            <td
-                                                colspan="4"
-                                                class="text-center text-muted py-5"
-                                            >
-
-                                                <i class="bi bi-qr-code-scan display-4 d-block mb-3 text-body-tertiary"></i>
-
-                                                Belum ada karyawan yang
-                                                melakukan absensi hari ini.
-
-                                            </td>
-
-                                        </tr>
-
-
-                                    <% } %>
-
-
-                                </tbody>
-
-                            </table>
 
                         </div>
 
                     </div>
 
-                </div>
 
+                </div>
 
             </div>
 
-        </div>
+        </main>
 
     </div>
 
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+    ></script>
 
 </body>
 </html>

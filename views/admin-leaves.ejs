@@ -1,80 +1,1448 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
+
     <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
     <title>Kelola Pengajuan Izin Karyawan</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+
+    <!-- Bootstrap -->
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+
+    <!-- Bootstrap Icons -->
+
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+    >
+
+
+    <!-- Google Font -->
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+
+    <style>
+
+        :root {
+            --primary-green: #00966c;
+            --bg-light: #f4f6f9;
+            --sidebar-dark: #1e2530;
+        }
+
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+            margin: 0;
+
+            padding: 0;
+
+            font-family: 'Plus Jakarta Sans', sans-serif;
+
+            background-color: var(--bg-light);
+
+            color: #232d42;
+        }
+
+
+        /* =====================================================
+           SIDEBAR
+        ===================================================== */
+
+        .sidebar {
+
+            position: fixed;
+
+            top: 0;
+
+            bottom: 0;
+
+            left: 0;
+
+            width: 260px;
+
+            background-color: var(--sidebar-dark);
+
+            z-index: 1000;
+
+            overflow-y: auto;
+        }
+
+
+        /* LOGO */
+
+        .brand-logo {
+
+            height: 98px;
+
+            padding: 0 24px;
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+            color: white;
+
+            font-size: 1.35rem;
+
+            font-weight: 700;
+
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+
+        .brand-icon-wrapper {
+
+            width: 44px;
+
+            height: 44px;
+
+            border-radius: 10px;
+
+            background-color: var(--primary-green);
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+        }
+
+
+        .brand-icon-wrapper i {
+
+            font-size: 23px;
+        }
+
+
+        /* MENU */
+
+        .sidebar-menu {
+
+            list-style: none;
+
+            padding: 28px 0;
+
+            margin: 0;
+        }
+
+
+        .menu-item {
+
+            margin: 2px 0;
+        }
+
+
+        .menu-item a {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+            padding: 14px 25px;
+
+            color: #aeb8ca;
+
+            text-decoration: none;
+
+            font-size: 0.95rem;
+
+            font-weight: 500;
+
+            transition: all 0.2s ease;
+        }
+
+
+        .menu-item a i {
+
+            width: 20px;
+
+            font-size: 18px;
+
+            text-align: center;
+        }
+
+
+        .menu-item a:hover {
+
+            color: white;
+
+            background-color: rgba(255,255,255,0.04);
+        }
+
+
+        /* MENU AKTIF */
+
+        .menu-item.active a {
+
+            color: white;
+
+            background-color: rgba(0,150,108,0.12);
+
+            border-left: 4px solid var(--primary-green);
+
+            padding-left: 21px;
+
+            font-weight: 600;
+        }
+
+
+        /* KELUAR */
+
+        .menu-item.logout {
+
+            margin-top: 30px;
+        }
+
+
+        .menu-item.logout a {
+
+            color: #ff4757;
+        }
+
+
+        .menu-item.logout a:hover {
+
+            color: #ff6b78;
+
+            background-color: rgba(255,71,87,0.05);
+        }
+
+
+        /* =====================================================
+           MAIN CONTENT
+        ===================================================== */
+
+        .main-content {
+
+            margin-left: 260px;
+
+            min-height: 100vh;
+        }
+
+
+        /* =====================================================
+           TOP NAVBAR
+        ===================================================== */
+
+        .top-navbar {
+
+            height: 82px;
+
+            background-color: white;
+
+            border-bottom: 1px solid #e8ebef;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            padding: 0 40px;
+        }
+
+
+        .top-title {
+
+            font-size: 1.05rem;
+
+            font-weight: 600;
+
+            color: #232d42;
+
+            margin: 0;
+        }
+
+
+        .top-right {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 22px;
+        }
+
+
+        .top-icon {
+
+            font-size: 20px;
+
+            color: #697386;
+
+            cursor: pointer;
+        }
+
+
+        .admin-profile {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+        }
+
+
+        .admin-avatar {
+
+            width: 42px;
+
+            height: 42px;
+
+            border-radius: 50%;
+
+            background-color: var(--primary-green);
+
+            color: white;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            font-weight: 700;
+
+            font-size: 17px;
+        }
+
+
+        .admin-profile-name {
+
+            font-size: 0.92rem;
+
+            font-weight: 600;
+
+            color: #232d42;
+        }
+
+
+        /* =====================================================
+           CONTENT
+        ===================================================== */
+
+        .content-body {
+
+            padding: 35px 40px;
+        }
+
+
+        /* HEADER */
+
+        .page-header {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            margin-bottom: 25px;
+        }
+
+
+        .page-title {
+
+            margin: 0;
+
+            font-size: 1.35rem;
+
+            font-weight: 700;
+
+            color: #172033;
+        }
+
+
+        .page-title i {
+
+            color: #f0ad00;
+        }
+
+
+        .page-subtitle {
+
+            margin-top: 7px;
+
+            color: #8a92a6;
+
+            font-size: 0.88rem;
+        }
+
+
+        .total-badge {
+
+            background-color: #fff3cd;
+
+            color: #9a6700;
+
+            border: 1px solid #ffe69c;
+
+            padding: 9px 16px;
+
+            border-radius: 30px;
+
+            font-size: 0.82rem;
+
+            font-weight: 600;
+        }
+
+
+        /* =====================================================
+           CARD
+        ===================================================== */
+
+        .content-card {
+
+            background-color: white;
+
+            border-radius: 16px;
+
+            border: 1px solid #e8ebef;
+
+            overflow: hidden;
+
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+
+
+        .card-header-custom {
+
+            padding: 20px 25px;
+
+            border-bottom: 1px solid #edf0f3;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+        }
+
+
+        .card-header-title {
+
+            margin: 0;
+
+            font-size: 1rem;
+
+            font-weight: 700;
+
+            color: #232d42;
+        }
+
+
+        .card-header-description {
+
+            color: #8a92a6;
+
+            font-size: 0.8rem;
+
+            margin-top: 4px;
+        }
+
+
+        /* =====================================================
+           TABLE
+        ===================================================== */
+
+        .table {
+
+            margin: 0;
+        }
+
+
+        .table thead th {
+
+            background-color: #f8f9fb;
+
+            color: #697386;
+
+            font-size: 0.78rem;
+
+            font-weight: 700;
+
+            border-bottom: 1px solid #e8ebef;
+
+            padding: 15px 18px;
+
+            white-space: nowrap;
+        }
+
+
+        .table tbody td {
+
+            padding: 16px 18px;
+
+            font-size: 0.84rem;
+
+            border-bottom: 1px solid #f0f2f5;
+
+            vertical-align: middle;
+        }
+
+
+        .table tbody tr:last-child td {
+
+            border-bottom: none;
+        }
+
+
+        .table tbody tr:hover {
+
+            background-color: #fafbfc;
+        }
+
+
+        /* =====================================================
+           BADGE JENIS
+        ===================================================== */
+
+        .badge-jenis {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            padding: 6px 11px;
+
+            border-radius: 20px;
+
+            font-size: 0.73rem;
+
+            font-weight: 600;
+        }
+
+
+        .badge-izin {
+
+            background-color: #e7f1ff;
+
+            color: #1769aa;
+        }
+
+
+        .badge-sakit {
+
+            background-color: #ffe8e8;
+
+            color: #d63343;
+        }
+
+
+        .badge-cuti {
+
+            background-color: #fff3cd;
+
+            color: #946c00;
+        }
+
+
+        /* =====================================================
+           STATUS
+        ===================================================== */
+
+        .status-badge {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 5px;
+
+            padding: 6px 11px;
+
+            border-radius: 20px;
+
+            font-size: 0.73rem;
+
+            font-weight: 600;
+        }
+
+
+        .status-pending {
+
+            background-color: #fff3cd;
+
+            color: #946c00;
+        }
+
+
+        .status-approved {
+
+            background-color: #d1e7dd;
+
+            color: #087f5b;
+        }
+
+
+        .status-rejected {
+
+            background-color: #f8d7da;
+
+            color: #b02a37;
+        }
+
+
+        /* =====================================================
+           BUTTON AKSI
+        ===================================================== */
+
+        .action-wrapper {
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            gap: 7px;
+        }
+
+
+        .btn-action {
+
+            border: none;
+
+            padding: 7px 13px;
+
+            border-radius: 20px;
+
+            font-size: 0.74rem;
+
+            font-weight: 600;
+
+            transition: 0.2s;
+        }
+
+
+        .btn-approve {
+
+            background-color: #00966c;
+
+            color: white;
+        }
+
+
+        .btn-approve:hover {
+
+            background-color: #007d59;
+
+            color: white;
+        }
+
+
+        .btn-reject {
+
+            background-color: #ff4757;
+
+            color: white;
+        }
+
+
+        .btn-reject:hover {
+
+            background-color: #e63b4a;
+
+            color: white;
+        }
+
+
+        .processed-text {
+
+            color: #9aa2b1;
+
+            font-size: 0.75rem;
+        }
+
+
+        /* =====================================================
+           EMPTY STATE
+        ===================================================== */
+
+        .empty-state {
+
+            padding: 60px 20px !important;
+
+            text-align: center;
+
+            color: #9aa2b1;
+        }
+
+
+        .empty-state i {
+
+            display: block;
+
+            font-size: 42px;
+
+            margin-bottom: 12px;
+
+            color: #d9dde4;
+        }
+
+
+        /* =====================================================
+           RESPONSIVE
+        ===================================================== */
+
+        @media (max-width: 992px) {
+
+            .sidebar {
+
+                width: 220px;
+            }
+
+
+            .main-content {
+
+                margin-left: 220px;
+            }
+
+
+            .top-navbar {
+
+                padding: 0 25px;
+            }
+
+
+            .content-body {
+
+                padding: 25px;
+            }
+
+        }
+
+
+        @media (max-width: 768px) {
+
+            .sidebar {
+
+                position: relative;
+
+                width: 100%;
+
+                height: auto;
+            }
+
+
+            .main-content {
+
+                margin-left: 0;
+            }
+
+
+            .top-navbar {
+
+                height: auto;
+
+                min-height: 70px;
+
+                padding: 15px 20px;
+            }
+
+
+            .content-body {
+
+                padding: 20px 15px;
+            }
+
+
+            .page-header {
+
+                flex-direction: column;
+
+                align-items: flex-start;
+
+                gap: 15px;
+            }
+
+
+            .admin-profile-name {
+
+                display: none;
+            }
+
+        }
+
+    </style>
+
 </head>
-<body class="bg-light py-5">
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 class="fw-bold m-0"><i class="bi bi-folder-symlink me-2 text-warning"></i>Daftar Pengajuan Izin & Cuti</h3>
-            <a href="/admin" class="btn btn-outline-secondary rounded-pill px-3 btn-sm">← Kembali ke Dashboard Admin</a>
-        </div>
 
-        <div class="card shadow-sm border-0 rounded-3">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Nama Karyawan</th>
-                            <th>Jenis</th>
-                            <th>Mulai</th>
-                            <th>Selesai</th>
-                            <th>Alasan</th>
-                            <th>Status</th>
-                            <th class="text-center">Aksi Admin</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% if (leaves && leaves.length > 0) { %>
-                            <% leaves.forEach(leave => { %>
-                                <tr>
-                                    <td class="fw-semibold"><%= leave.User ? leave.User.nama : 'Karyawan' %></td>
-                                    <td><span class="badge bg-secondary"><%= leave.jenis %></span></td>
-                                    <td><%= leave.tanggal_mulai %></td>
-                                    <td><%= leave.tanggal_selesai %></td>
-                                    <td class="text-muted"><%= leave.alasan %></td>
-                                    <td>
-                                        <% if(leave.status === 'Pending') { %>
-                                            <span class="badge bg-warning text-dark">Pending</span>
-                                        <% } else if(leave.status === 'Disetujui' || leave.status === 'Approved') { %>
-                                            <span class="badge bg-success">Disetujui</span>
-                                        <% } else { %>
-                                            <span class="badge bg-danger">Ditolak</span>
-                                        <% } %>
-                                    </td>
-                                    <td class="text-center">
-                                        <% if(leave.status === 'Pending') { %>
-                                            <div class="d-flex justify-content-center gap-2">
-                                                <!-- Form Setuju -->
-                                                <form action="/admin/leaves/<%= leave.id %>/action" method="POST">
-                                                    <input type="hidden" name="statusAction" value="Disetujui">
-                                                    <button type="submit" class="btn btn-sm btn-success px-3 rounded-pill fw-semibold">Setuju</button>
-                                                </form>
 
-                                                <!-- Form Tolak -->
-                                                <form action="/admin/leaves/<%= leave.id %>/action" method="POST">
-                                                    <input type="hidden" name="statusAction" value="Ditolak">
-                                                    <button type="submit" class="btn btn-sm btn-danger px-3 rounded-pill fw-semibold">Tolak</button>
-                                                </form>
-                                            </div>
-                                        <% } else { %>
-                                            <span class="text-muted small">Selesai diproses</span>
-                                        <% } %>
-                                    </td>
-                                </tr>
-                            <% }) %>
-                        <% } else { %>
-                            <tr>
-                                <td colspan="7" class="text-center text-muted py-4">Belum ada pengajuan izin masuk.</td>
-                            </tr>
-                        <% } %>
-                    </tbody>
-                </table>
+<body>
+
+
+    <!-- =====================================================
+         SIDEBAR
+    ===================================================== -->
+
+    <aside class="sidebar">
+
+
+        <!-- BRAND -->
+
+        <div class="brand-logo">
+
+            <div class="brand-icon-wrapper">
+
+                <i class="bi bi-fingerprint"></i>
+
             </div>
+
+            <span>Absensi</span>
+
         </div>
+
+
+        <!-- MENU -->
+
+        <ul class="sidebar-menu">
+
+
+            <!-- DASHBOARD -->
+
+            <li class="menu-item">
+
+                <a href="/admin">
+
+                    <i class="bi bi-grid-1x2"></i>
+
+                    <span>Dashboard</span>
+
+                </a>
+
+            </li>
+
+
+            <!-- QR DINAMIS -->
+
+            <li class="menu-item">
+
+                <a href="/admin/qr-dinamis">
+
+                    <i class="bi bi-qr-code-scan"></i>
+
+                    <span>QR Dinamis</span>
+
+                </a>
+
+            </li>
+
+
+            <!-- IZIN / CUTI / SAKIT -->
+
+            <li class="menu-item active">
+
+                <a href="/admin/leaves">
+
+                    <i class="bi bi-calendar2-check"></i>
+
+                    <span>Izin / Cuti / Sakit</span>
+
+                </a>
+
+            </li>
+
+
+            <!-- MASTER DATA -->
+
+            <li class="menu-item">
+
+                <a href="/admin/master-data">
+
+                    <i class="bi bi-database"></i>
+
+                    <span>Master Data</span>
+
+                </a>
+
+            </li>
+
+
+            <!-- LAPORAN -->
+
+            <li class="menu-item">
+
+                <a href="/admin/reports">
+
+                    <i class="bi bi-file-earmark-text"></i>
+
+                    <span>Laporan</span>
+
+                </a>
+
+            </li>
+
+
+            <!-- KELUAR -->
+
+            <li class="menu-item logout">
+
+                <a href="/logout">
+
+                    <i class="bi bi-box-arrow-right"></i>
+
+                    <span>Keluar</span>
+
+                </a>
+
+            </li>
+
+
+        </ul>
+
+    </aside>
+
+
+    <!-- =====================================================
+         MAIN CONTENT
+    ===================================================== -->
+
+    <div class="main-content">
+
+
+        <!-- =================================================
+             TOP NAVBAR
+        ================================================== -->
+
+        <header class="top-navbar">
+
+
+            <h5 class="top-title">
+
+                Kelola Pengajuan Izin / Cuti / Sakit
+
+            </h5>
+
+
+            <div class="top-right">
+
+
+                <i class="bi bi-bell top-icon"></i>
+
+                <i class="bi bi-envelope top-icon"></i>
+
+
+                <div class="admin-profile">
+
+
+                    <div class="admin-avatar">
+
+                        <%= (
+                            typeof user !== 'undefined' &&
+                            user &&
+                            user.nama
+                        )
+                            ? user.nama.charAt(0).toUpperCase()
+                            : 'A'
+                        %>
+
+                    </div>
+
+
+                    <span class="admin-profile-name">
+
+                        <%= (
+                            typeof user !== 'undefined' &&
+                            user &&
+                            user.nama
+                        )
+                            ? user.nama
+                            : 'Admin'
+                        %>
+
+                    </span>
+
+
+                    <i class="bi bi-chevron-down text-secondary"></i>
+
+
+                </div>
+
+
+            </div>
+
+
+        </header>
+
+
+        <!-- =================================================
+             CONTENT
+        ================================================== -->
+
+        <main class="content-body">
+
+
+            <div class="container-fluid p-0">
+
+
+                <!-- PAGE HEADER -->
+
+                <div class="page-header">
+
+
+                    <div>
+
+                        <h4 class="page-title">
+
+                            <i class="bi bi-folder-symlink me-2"></i>
+
+                            Daftar Pengajuan Izin & Cuti
+
+                        </h4>
+
+
+                        <div class="page-subtitle">
+
+                            Kelola pengajuan izin, sakit, dan cuti karyawan.
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="total-badge">
+
+                        <i class="bi bi-clipboard-check me-1"></i>
+
+                        <%= leaves ? leaves.length : 0 %> Pengajuan
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- =================================================
+                     TABLE CARD
+                ================================================== -->
+
+                <div class="content-card">
+
+
+                    <!-- CARD HEADER -->
+
+                    <div class="card-header-custom">
+
+
+                        <div>
+
+                            <h6 class="card-header-title">
+
+                                Data Pengajuan Karyawan
+
+                            </h6>
+
+
+                            <div class="card-header-description">
+
+                                Daftar pengajuan yang masuk dan status prosesnya.
+
+                            </div>
+
+                        </div>
+
+
+                    </div>
+
+
+                    <!-- TABLE -->
+
+                    <div class="table-responsive">
+
+
+                        <table class="table table-hover align-middle">
+
+
+                            <thead>
+
+                                <tr>
+
+                                    <th class="ps-4">
+
+                                        Nama Karyawan
+
+                                    </th>
+
+                                    <th>
+
+                                        Jenis
+
+                                    </th>
+
+                                    <th>
+
+                                        Mulai
+
+                                    </th>
+
+                                    <th>
+
+                                        Selesai
+
+                                    </th>
+
+                                    <th>
+
+                                        Alasan
+
+                                    </th>
+
+                                    <th>
+
+                                        Status
+
+                                    </th>
+
+                                    <th class="text-center">
+
+                                        Aksi Admin
+
+                                    </th>
+
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody>
+
+
+                                <% if (leaves && leaves.length > 0) { %>
+
+
+                                    <% leaves.forEach(leave => { %>
+
+
+                                        <tr>
+
+
+                                            <!-- NAMA -->
+
+                                            <td class="fw-semibold ps-4">
+
+                                                <%= leave.User
+                                                    ? leave.User.nama
+                                                    : 'Karyawan'
+                                                %>
+
+                                            </td>
+
+
+                                            <!-- JENIS -->
+
+                                            <td>
+
+
+                                                <% if (
+                                                    leave.jenis &&
+                                                    leave.jenis.toLowerCase() === 'izin'
+                                                ) { %>
+
+
+                                                    <span class="badge-jenis badge-izin">
+
+                                                        <i class="bi bi-info-circle me-1"></i>
+
+                                                        Izin
+
+                                                    </span>
+
+
+                                                <% } else if (
+                                                    leave.jenis &&
+                                                    leave.jenis.toLowerCase() === 'sakit'
+                                                ) { %>
+
+
+                                                    <span class="badge-jenis badge-sakit">
+
+                                                        <i class="bi bi-heart-pulse me-1"></i>
+
+                                                        Sakit
+
+                                                    </span>
+
+
+                                                <% } else { %>
+
+
+                                                    <span class="badge-jenis badge-cuti">
+
+                                                        <i class="bi bi-calendar-event me-1"></i>
+
+                                                        <%= leave.jenis || 'Cuti' %>
+
+                                                    </span>
+
+
+                                                <% } %>
+
+
+                                            </td>
+
+
+                                            <!-- MULAI -->
+
+                                            <td>
+
+                                                <%= leave.tanggal_mulai || '-' %>
+
+                                            </td>
+
+
+                                            <!-- SELESAI -->
+
+                                            <td>
+
+                                                <%= leave.tanggal_selesai || '-' %>
+
+                                            </td>
+
+
+                                            <!-- ALASAN -->
+
+                                            <td>
+
+                                                <span
+                                                    class="text-muted"
+                                                    style="max-width:220px; display:block;"
+                                                >
+
+                                                    <%= leave.alasan || '-' %>
+
+                                                </span>
+
+                                            </td>
+
+
+                                            <!-- STATUS -->
+
+                                            <td>
+
+
+                                                <% if (
+                                                    leave.status === 'Pending'
+                                                ) { %>
+
+
+                                                    <span class="status-badge status-pending">
+
+                                                        <i class="bi bi-hourglass-split"></i>
+
+                                                        Pending
+
+                                                    </span>
+
+
+                                                <% } else if (
+                                                    leave.status === 'Disetujui' ||
+                                                    leave.status === 'Approved'
+                                                ) { %>
+
+
+                                                    <span class="status-badge status-approved">
+
+                                                        <i class="bi bi-check-circle"></i>
+
+                                                        Disetujui
+
+                                                    </span>
+
+
+                                                <% } else { %>
+
+
+                                                    <span class="status-badge status-rejected">
+
+                                                        <i class="bi bi-x-circle"></i>
+
+                                                        Ditolak
+
+                                                    </span>
+
+
+                                                <% } %>
+
+
+                                            </td>
+
+
+                                            <!-- AKSI -->
+
+                                            <td class="text-center">
+
+
+                                                <% if (
+                                                    leave.status === 'Pending'
+                                                ) { %>
+
+
+                                                    <div class="action-wrapper">
+
+
+                                                        <!-- SETUJU -->
+
+                                                        <form
+                                                            action="/admin/leaves/<%= leave.id %>/action"
+                                                            method="POST"
+                                                            class="m-0"
+                                                        >
+
+                                                            <input
+                                                                type="hidden"
+                                                                name="statusAction"
+                                                                value="Disetujui"
+                                                            >
+
+
+                                                            <button
+                                                                type="submit"
+                                                                class="btn-action btn-approve"
+                                                            >
+
+                                                                <i class="bi bi-check-lg me-1"></i>
+
+                                                                Setuju
+
+                                                            </button>
+
+                                                        </form>
+
+
+                                                        <!-- TOLAK -->
+
+                                                        <form
+                                                            action="/admin/leaves/<%= leave.id %>/action"
+                                                            method="POST"
+                                                            class="m-0"
+                                                        >
+
+                                                            <input
+                                                                type="hidden"
+                                                                name="statusAction"
+                                                                value="Ditolak"
+                                                            >
+
+
+                                                            <button
+                                                                type="submit"
+                                                                class="btn-action btn-reject"
+                                                            >
+
+                                                                <i class="bi bi-x-lg me-1"></i>
+
+                                                                Tolak
+
+                                                            </button>
+
+                                                        </form>
+
+
+                                                    </div>
+
+
+                                                <% } else { %>
+
+
+                                                    <span class="processed-text">
+
+                                                        <i class="bi bi-check2-all me-1"></i>
+
+                                                        Selesai diproses
+
+                                                    </span>
+
+
+                                                <% } %>
+
+
+                                            </td>
+
+
+                                        </tr>
+
+
+                                    <% }) %>
+
+
+                                <% } else { %>
+
+
+                                    <!-- EMPTY STATE -->
+
+                                    <tr>
+
+                                        <td
+                                            colspan="7"
+                                            class="empty-state"
+                                        >
+
+                                            <i class="bi bi-folder2-open"></i>
+
+                                            Belum ada pengajuan izin masuk.
+
+                                        </td>
+
+                                    </tr>
+
+
+                                <% } %>
+
+
+                            </tbody>
+
+
+                        </table>
+
+
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+
+        </main>
+
+
     </div>
+
+
+    <!-- Bootstrap JS -->
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+    ></script>
+
+
 </body>
+
 </html>
