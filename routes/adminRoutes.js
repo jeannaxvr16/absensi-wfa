@@ -47,36 +47,40 @@ const isToday = (dateString) => {
         day: 'numeric'
     };
 
-    const dateStr =
-        d.toLocaleDateString('id-ID', options);
-
-    const todayStr =
-        today.toLocaleDateString('id-ID', options);
+    const dateStr = d.toLocaleDateString('id-ID', options);
+    const todayStr = today.toLocaleDateString('id-ID', options);
 
     return dateStr === todayStr;
 };
 
 
 // ======================================================
-// FUNGSI LOGIKA KETERLAMBATAN SHIFT
+// FUNGSI LOGIKA STATUS SHIFT
+// ======================================================
+// Pagi  : 08:00 - 13:00
+// Siang : 13:00 - 21:00
+// Malam : 21:00 - 05:00
+//
+// Di dalam rentang shift = Tepat Waktu
+// Di luar rentang shift   = Terlambat
 // ======================================================
 
 function hitungStatusKeterlambatan(waktuAbsen, shiftUser) {
 
+    if (!waktuAbsen) {
+        return 'Tepat Waktu';
+    }
+
     const dateObj = new Date(waktuAbsen);
 
     const formatter = new Intl.DateTimeFormat('id-ID', {
-
         timeZone: 'Asia/Jakarta',
-
         hour: 'numeric',
         minute: 'numeric',
-
         hour12: false
     });
 
-    const formattedParts =
-        formatter.formatToParts(dateObj);
+    const formattedParts = formatter.formatToParts(dateObj);
 
     let jamWIB = 0;
     let menitWIB = 0;
@@ -100,47 +104,24 @@ function hitungStatusKeterlambatan(waktuAbsen, shiftUser) {
     const totalMenitAbsen =
         (jamWIB * 60) + menitWIB;
 
+
     const shift =
-        (shiftUser || 'pagi').toLowerCase();
+        (shiftUser || 'Pagi').toString().trim().toLowerCase();
 
 
+    // ==================================================
     // SHIFT PAGI
+    // 08:00 - 13:00
+    // ==================================================
+
     if (shift === 'pagi') {
 
-        const jamMasuk = 8 * 60;
-
-        if (totalMenitAbsen <= jamMasuk) {
-            return 'Tepat Waktu';
-        }
-
-        return 'Terlambat';
-    }
-
-
-    // SHIFT SIANG
-    else if (shift === 'siang') {
-
-        const jamMasuk = 13 * 60;
-
-        if (totalMenitAbsen <= jamMasuk) {
-            return 'Tepat Waktu';
-        }
-
-        return 'Terlambat';
-    }
-
-
-    // SHIFT SORE / MALAM
-    else if (
-        shift === 'sore' ||
-        shift === 'malam'
-    ) {
-
-        const jamMasuk = 21 * 60;
+        const jamMulai = 8 * 60;
+        const jamSelesai = 13 * 60;
 
         if (
-            totalMenitAbsen >= jamMasuk ||
-            totalMenitAbsen <= (5 * 60)
+            totalMenitAbsen >= jamMulai &&
+            totalMenitAbsen <= jamSelesai
         ) {
             return 'Tepat Waktu';
         }
@@ -149,6 +130,55 @@ function hitungStatusKeterlambatan(waktuAbsen, shiftUser) {
     }
 
 
+    // ==================================================
+    // SHIFT SIANG
+    // 13:00 - 21:00
+    // ==================================================
+
+    if (shift === 'siang') {
+
+        const jamMulai = 13 * 60;
+        const jamSelesai = 21 * 60;
+
+        if (
+            totalMenitAbsen >= jamMulai &&
+            totalMenitAbsen <= jamSelesai
+        ) {
+            return 'Tepat Waktu';
+        }
+
+        return 'Terlambat';
+    }
+
+
+    // ==================================================
+    // SHIFT MALAM / SORE
+    // 21:00 - 05:00
+    // ==================================================
+
+    if (
+        shift === 'malam' ||
+        shift === 'sore'
+    ) {
+
+        const jamMulai = 21 * 60;
+        const jamSelesai = 5 * 60;
+
+        // Karena melewati tengah malam:
+        // 21:00 - 23:59 ATAU 00:00 - 05:00
+
+        if (
+            totalMenitAbsen >= jamMulai ||
+            totalMenitAbsen <= jamSelesai
+        ) {
+            return 'Tepat Waktu';
+        }
+
+        return 'Terlambat';
+    }
+
+
+    // Jika shift tidak dikenali
     return 'Tepat Waktu';
 }
 
@@ -187,7 +217,8 @@ router.get('/', async (req, res) => {
             });
 
 
-        // Hitung ulang status keterlambatan
+        // Hitung ulang status berdasarkan
+        // shift masing-masing karyawan
         const allAttendances =
             allAttendancesRaw.map(att => {
 
@@ -200,7 +231,7 @@ router.get('/', async (req, res) => {
                     data.User &&
                     data.User.shift
                         ? data.User.shift
-                        : 'pagi';
+                        : 'Pagi';
 
                 return {
 
@@ -217,6 +248,7 @@ router.get('/', async (req, res) => {
             });
 
 
+        // Ambil absensi hari ini
         const attendancesToday =
             allAttendances.filter(
                 item => isToday(item.waktu)
@@ -241,7 +273,10 @@ router.get('/', async (req, res) => {
             });
 
 
-        // Hitung jumlah shift
+        // ==================================================
+        // JUMLAH KARYAWAN PER SHIFT
+        // ==================================================
+
         const shiftPagi =
             await User.count({
                 where: {
@@ -262,20 +297,15 @@ router.get('/', async (req, res) => {
 
         const shiftMalam =
             await User.count({
-
                 where: {
-
                     shift: {
                         [Op.in]: [
                             'Malam',
                             'Sore'
                         ]
                     },
-
                     role: 'karyawan'
-
                 }
-
             });
 
 
@@ -863,7 +893,7 @@ router.get(
                 });
 
 
-            // Hitung ulang status
+            // Hitung ulang status berdasarkan shift
             const attendances =
                 attendancesRaw.map(att => {
 
@@ -877,7 +907,7 @@ router.get(
                         data.User &&
                         data.User.shift
                             ? data.User.shift
-                            : 'pagi';
+                            : 'Pagi';
 
 
                     return {
@@ -935,15 +965,11 @@ router.get(
 // 4. QR DINAMIS
 // ======================================================
 //
-// ROUTE QR DINAMIS TIDAK DITARUH DI SINI.
+// ROUTE QR DINAMIS DITANGANI
+// OLEH routes/attendanceRoutes.js
 //
-// Route /admin/qr-dinamis ditangani
-// oleh routes/attendanceRoutes.js
-//
-// Alasannya:
-// QR Dinamis membutuhkan pembuatan dan
-// verifikasi JWT token.
-//
+// Tidak ada route /qr-dinamis di file ini
+// untuk menghindari route bentrok.
 // ======================================================
 
 
