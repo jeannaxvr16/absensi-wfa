@@ -772,7 +772,42 @@ router.post(
 
 
 // ======================================================
-// 2.2 EDIT DATA KARYAWAN
+// 2.2 RESET DEVICE KARYAWAN
+// ======================================================
+// Dipakai Admin jika karyawan berganti HP/browser.
+// Setelah di-reset, login berikutnya dari perangkat baru
+// akan menjadi perangkat yang terikat ke akun tersebut.
+// ======================================================
+
+router.post(
+    '/users/reset-device/:id',
+    async (req, res) => {
+
+        try {
+            const user = await User.findByPk(req.params.id)
+
+            if (!user) {
+                return res.status(404).send('Karyawan tidak ditemukan')
+            }
+
+            if (user.role !== 'karyawan') {
+                return res.status(400).send('Device binding hanya digunakan untuk akun karyawan')
+            }
+
+            await user.update({ device_id: null })
+
+            res.redirect('/admin/master-data')
+
+        } catch (error) {
+            console.error('Error Reset Device:', error)
+            res.status(500).send('Gagal mereset perangkat karyawan')
+        }
+    }
+)
+
+
+// ======================================================
+// 2.3 EDIT DATA KARYAWAN
 // ======================================================
 
 router.post(

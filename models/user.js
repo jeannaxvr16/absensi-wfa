@@ -18,6 +18,14 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING
     },
 
+    // ID perangkat pertama yang digunakan karyawan saat login.
+    // Dipakai untuk device binding agar akun tidak mudah dipakai dari perangkat lain.
+    device_id: {
+        type: DataTypes.STRING(128),
+        allowNull: true,
+        defaultValue: null
+    },
+
     // --- TAMBAHAN KOLOM BARU UNTUK SHIFT OTOMATIS ---
     shift: {
         type: DataTypes.STRING,

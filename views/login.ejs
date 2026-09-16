@@ -40,7 +40,8 @@
             </div>
         <% } %>
 
-        <form action="/login" method="POST">
+        <form action="/login" method="POST" id="login-form">
+            <input type="hidden" name="device_id" id="device_id">
             <div class="mb-3">
                 <label class="form-label small fw-semibold text-secondary">Alamat Email</label>
                 <input type="email" name="email" class="form-control" placeholder="nama@perusahaan.com" required>
@@ -62,6 +63,45 @@
             <p class="text-muted small mb-0">Belum punya akun? <a href="/register" class="text-decoration-none">Daftar di sini</a></p>
         </div>
     </div>
+
+<script>
+    // ==========================================
+    // DEVICE BINDING
+    // ==========================================
+    // Membuat ID perangkat sekali dan menyimpannya di browser.
+    // ID ini tidak berisi data pribadi pengguna.
+    const DEVICE_STORAGE_KEY = 'wfa_device_id';
+
+    function generateDeviceId() {
+        if (window.crypto && crypto.randomUUID) {
+            return crypto.randomUUID() + '-' + crypto.randomUUID();
+        }
+
+        return 'wfa-' + Date.now() + '-' + Math.random().toString(36).slice(2) + '-' + Math.random().toString(36).slice(2);
+    }
+
+    try {
+        let deviceId = localStorage.getItem(DEVICE_STORAGE_KEY);
+
+        if (!deviceId) {
+            deviceId = generateDeviceId();
+            localStorage.setItem(DEVICE_STORAGE_KEY, deviceId);
+        }
+
+        document.getElementById('device_id').value = deviceId;
+    } catch (error) {
+        console.error('DEVICE ID ERROR:', error);
+    }
+
+    document.getElementById('login-form').addEventListener('submit', function(event) {
+        const deviceId = document.getElementById('device_id').value;
+
+        if (!deviceId) {
+            event.preventDefault();
+            alert('Identitas perangkat belum tersedia. Pastikan browser mengizinkan penyimpanan lokal, lalu coba lagi.');
+        }
+    });
+</script>
 
 </body>
 </html>

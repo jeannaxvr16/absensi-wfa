@@ -180,7 +180,7 @@ router.get('/login', (req, res) => {
 // Proses Validasi Authentikasi Login
 router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body
+        const { email, password, device_id } = req.body
 
         const user = await User.findOne({ where: { email } })
         if (!user) {
@@ -190,6 +190,28 @@ router.post('/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password)
         if (!isMatch) {
             return res.render('login', { error: 'Email atau password salah!' })
+        }
+
+        // ==========================================
+        // DEVICE BINDING KHUSUS KARYAWAN
+        // ==========================================
+        // device_id dibuat oleh browser dan disimpan di localStorage.
+        // Saat login pertama, device diikat ke akun.
+        // Login berikutnya dari device berbeda akan ditolak.
+        if (user.role === 'karyawan') {
+            if (!device_id || typeof device_id !== 'string' || device_id.length < 20 || device_id.length > 128) {
+                return res.render('login', {
+                    error: 'Identitas perangkat tidak dapat dibaca. Silakan aktifkan JavaScript lalu coba lagi.'
+                })
+            }
+
+            if (!user.device_id) {
+                await user.update({ device_id })
+            } else if (user.device_id !== device_id) {
+                return res.render('login', {
+                    error: 'Akun ini sudah terikat ke perangkat lain. Silakan gunakan perangkat yang sudah terdaftar atau minta Admin melakukan reset perangkat.'
+                })
+            }
         }
 
         // Menyimpan data user ke Session setelah berhasil login
