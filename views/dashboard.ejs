@@ -1,229 +1,93 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Karyawan - Absensi WFA</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<%- include('partials/karyawan-head', { title: 'Dashboard Karyawan - WFA Attendance' }) %>
+<%- include('partials/karyawan-sidebar', { active: 'dashboard', user: user }) %>
 
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f4f6f9;
-        }
-        .navbar-brand {
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-        .card {
-            border: none;
-            border-radius: 14px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-        .welcome-card {
-            background: linear-gradient(135deg, #0d6efd, #0a58ca);
-            color: white;
-        }
-        .btn-scan-large {
-            padding: 20px;
-            border-radius: 12px;
-            font-weight: 600;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 6px 15px rgba(13, 110, 253, 0.2);
-        }
-        .btn-scan-large:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(13, 110, 253, 0.3);
-        }
-        #live-clock {
-            font-size: 3rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-        }
-        .table-responsive {
-            border-radius: 10px;
-            overflow: hidden;
-        }
-    </style>
-</head>
-<body>
+<div class="wfa-hero">
+  <div class="wfa-hero-copy">
+    <small><i class="bi bi-stars me-1"></i> Sistem Presensi WFA</small>
+    <h1>Selamat Datang,<br><%= user.nama %></h1>
+    <p>Kelola presensi, pengajuan, dan aktivitas kerja Anda dari satu tempat.</p>
+  </div>
+  <div class="wfa-hero-art" aria-hidden="true">
+    <div class="wfa-person"></div><div class="wfa-laptop"></div><div class="wfa-leaf"></div>
+  </div>
+</div>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm mb-4">
-        <div class="container px-4">
-            <a class="navbar-brand" href="#">
-                <i class="bi bi-qr-code-scan me-2"></i>WFA-ATTENDANCE 
-                <span class="badge bg-primary ms-1 text-uppercase" style="font-size: 0.65rem;">Karyawan</span>
-            </a>
-            <div class="justify-content-end">
-                <span class="text-white-50 me-3 small"><i class="bi bi-person-fill me-1"></i> Mode Karyawan</span>
-                <a class="btn btn-sm btn-outline-light" href="/logout"><i class="bi bi-box-arrow-right me-1"></i> Keluar</a>
-            </div>
+<div class="wfa-quick">
+  <a class="wfa-quick-card" href="/scan">
+    <div class="wfa-icon blue"><i class="bi bi-qr-code-scan"></i></div><div class="wfa-arrow"><i class="bi bi-chevron-right"></i></div>
+    <h3>Scan QR Presensi</h3><p>Lakukan presensi menggunakan QR Code dari Admin.</p>
+  </a>
+  <a class="wfa-quick-card" href="/leave/new">
+    <div class="wfa-icon green"><i class="bi bi-calendar-plus"></i></div><div class="wfa-arrow"><i class="bi bi-chevron-right"></i></div>
+    <h3>Pengajuan Izin / Cuti</h3><p>Ajukan izin, sakit, atau cuti dengan mudah.</p>
+  </a>
+  <a class="wfa-quick-card" href="/riwayat-presensi">
+    <div class="wfa-icon purple"><i class="bi bi-clock-history"></i></div><div class="wfa-arrow"><i class="bi bi-chevron-right"></i></div>
+    <h3>Riwayat Presensi</h3><p>Lihat seluruh riwayat kehadiran dan lokasi.</p>
+  </a>
+  <a class="wfa-quick-card" href="/profil">
+    <div class="wfa-icon orange"><i class="bi bi-person"></i></div><div class="wfa-arrow"><i class="bi bi-chevron-right"></i></div>
+    <h3>Profil Saya</h3><p>Kelola data akun dan informasi perangkat.</p>
+  </a>
+</div>
+
+<div class="wfa-grid">
+  <div>
+    <section class="wfa-card">
+      <div class="wfa-card-head"><h2><i class="bi bi-calendar-check text-primary me-2"></i>Status Presensi Hari Ini</h2><span><%= dashboardDate %> WIB</span></div>
+      <% if (todayAttendance) { %>
+        <div class="wfa-status">
+          <div class="wfa-status-icon"><i class="bi bi-check-lg"></i></div>
+          <div><strong>Sudah Absen Hari Ini</strong><small>Presensi tercatat pada <%= todayAttendance.time %> WIB.</small></div>
         </div>
-    </nav>
+        <div class="wfa-info-row">
+          <div class="wfa-info"><small><i class="bi bi-clock me-1"></i> Waktu Masuk</small><strong><%= todayAttendance.time %> WIB</strong></div>
+          <div class="wfa-info"><small><i class="bi bi-geo-alt me-1"></i> Lokasi</small><strong><%= todayAttendance.latitude %>, <%= todayAttendance.longitude %></strong></div>
+          <div class="wfa-info"><small><i class="bi bi-tag me-1"></i> Status</small><strong><span class="wfa-pill <%= todayAttendance.status.toLowerCase().includes('terlambat') ? 'warning' : 'success' %>"><%= todayAttendance.status %></span></strong></div>
+        </div>
+      <% } else { %>
+        <div class="wfa-status">
+          <div class="wfa-status-icon" style="background:#2563eb"><i class="bi bi-qr-code-scan"></i></div>
+          <div><strong>Belum Absen Hari Ini</strong><small>Silakan lakukan presensi sebelum mulai bekerja.</small></div>
+        </div>
+        <div class="wfa-info-row">
+          <div class="wfa-info"><small><i class="bi bi-clock me-1"></i> Jam Shift</small><strong><%= user.shift || 'Pagi' %></strong></div>
+          <div class="wfa-info"><small><i class="bi bi-geo-alt me-1"></i> Area Kerja</small><strong>WFA • Radius 100 km</strong></div>
+          <div class="wfa-info"><small><i class="bi bi-shield-check me-1"></i> Status</small><strong>Menunggu Presensi</strong></div>
+        </div>
+      <% } %>
+    </section>
 
-    <div class="container px-4 mb-5">
-        <div class="row g-4">
-            
-            <!-- KANAN: Informasi Profil & Jam -->
-            <div class="col-12 col-lg-4">
-                <div class="card welcome-card p-4 mb-4">
-                    <span class="badge bg-white bg-opacity-25 text-white align-self-start mb-3">Sistem Presensi WFA</span>
-                    <h3 class="fw-bold mb-1">Halo, <%= typeof user !== 'undefined' && user ? user.nama : 'Karyawan' %>!</h3>
-                    <p class="text-white-50 small mb-0"><%= typeof user !== 'undefined' && user ? user.email : '' %></p>
-                    <hr class="bg-white bg-opacity-25 my-3">
-                    <small class="text-white-50 d-block mb-3">Pastikan izin GPS/Lokasi browser kamu aktif saat melakukan scan.</small>
-                    
-                    <a href="/leave/new" class="btn btn-warning w-100 fw-bold text-dark shadow-sm py-2">
-                        <i class="bi bi-pencil-square me-2"></i>Ajukan Izin / Sakit / Cuti
-                    </a>
-                </div>
+    <section class="wfa-card mt-3">
+      <div class="wfa-card-head"><h2><i class="bi bi-clock text-primary me-2"></i>Jadwal Shift</h2><span>Aktif hari ini</span></div>
+      <div class="wfa-shift"><div><strong>Shift <%= user.shift || 'Pagi' %></strong><span><%= shiftTime %></span></div><span class="wfa-pill success">Aktif</span></div>
+    </section>
 
-                <div class="card p-4 text-center bg-white">
-                    <span class="text-muted text-uppercase fw-semibold small d-block mb-2">Waktu Saat Ini</span>
-                    <div class="text-primary" id="live-clock">00:00:00</div>
-                    <span class="fw-semibold text-secondary mt-1 d-block" id="live-date">Memuat tanggal...</span>
-                </div>
-            </div>
+    <div class="wfa-quote"><p>“Kerja dari mana saja, tetap satu tujuan. Disiplin hari ini, hasil yang lebih baik esok.”</p></div>
+  </div>
 
-            <!-- KIRI: Aksi Scan & Riwayat Absen -->
-            <div class="col-12 col-lg-8">
-                
-                <div class="card p-4 mb-4 bg-white">
-                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-camera me-2 text-primary"></i>Ambil Kehadiran Hari Ini</h5>
-                    <p class="text-muted small">Silakan klik tombol di bawah untuk membuka kamera laptop/HP dan scan QR Code yang disediakan oleh HRD.</p>
-                    <a href="/scan" class="btn btn-primary btn-lg btn-scan-large mt-2">
-                        <i class="bi bi-qr-code-scan fs-4"></i> Buka Kamera & Scan QR Code
-                    </a>
-                </div>
+  <div>
+    <section class="wfa-card">
+      <div class="wfa-card-head"><h2><i class="bi bi-bar-chart-line text-primary me-2"></i>Ringkasan Kehadiran</h2><a href="/riwayat-presensi">Lihat detail →</a></div>
+      <div class="wfa-metrics">
+        <div class="wfa-metric"><div class="wfa-icon green"><i class="bi bi-check-circle"></i></div><div><small>Hadir</small><b><%= stats.hadir %></b></div></div>
+        <div class="wfa-metric"><div class="wfa-icon orange"><i class="bi bi-clock"></i></div><div><small>Terlambat</small><b><%= stats.terlambat %></b></div></div>
+        <div class="wfa-metric"><div class="wfa-icon purple"><i class="bi bi-calendar2-check"></i></div><div><small>Pengajuan</small><b><%= stats.pengajuan %></b></div></div>
+        <div class="wfa-metric"><div class="wfa-icon blue"><i class="bi bi-calendar-event"></i></div><div><small>Disetujui</small><b><%= stats.disetujui %></b></div></div>
+      </div>
+    </section>
 
-                <div class="card p-4 bg-white mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history me-2 text-warning"></i>Log Riwayat Absensi Anda</h5>
-                        <span class="badge bg-light text-dark border">Data Riwayat</span>
-                    </div>
+    <section class="wfa-card mt-3">
+      <div class="wfa-card-head"><h2><i class="bi bi-send text-primary me-2"></i>Pengajuan Terbaru</h2><a href="/leave/new">Buat pengajuan →</a></div>
+      <% if (recentLeaves.length) { recentLeaves.forEach(leave => { %>
+        <div class="wfa-list-item">
+          <div class="wfa-list-icon"><i class="bi bi-calendar2"></i></div>
+          <div><strong><%= leave.jenis %></strong><small><%= leave.tanggal_mulai %> - <%= leave.tanggal_selesai %></small></div>
+          <span class="wfa-pill <%= leave.status === 'Disetujui' ? 'success' : leave.status === 'Ditolak' ? 'danger' : 'warning' %>"><%= leave.status %></span>
+        </div>
+      <% }) } else { %><div class="wfa-empty py-4"><i class="bi bi-inbox fs-3 d-block mb-2"></i>Belum ada pengajuan.</div><% } %>
+    </section>
+  </div>
+</div>
 
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 bg-white">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Waktu Absen</th>
-                                    <th>Koordinat Lokasi</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <% if (typeof attendances !== 'undefined' && attendances.length > 0) { %>
-                                    <% attendances.forEach(item => { %>
-                                    <tr>
-                                        <td>
-                                            <i class="bi bi-calendar3 me-2 text-muted"></i><strong><%= new Date(item.waktu).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'full', timeStyle: 'medium' }) %> WIB</strong>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-light text-dark border">
-                                                <i class="bi bi-geo-alt text-danger me-1"></i> <%= item.latitude || '-' %>, <%= item.longitude || '-' %>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <% 
-                                                const statusStr = (item.statusTelat || item.status || '').toString().toLowerCase();
-                                            %>
-                                            <% if (statusStr.includes('terlambat') || statusStr.includes('late')) { %>
-                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1.5 rounded">
-                                                    <i class="bi bi-exclamation-circle-fill me-1"></i> Terlambat
-                                                </span>
-                                            <% } else { %>
-                                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1.5 rounded">
-                                                    <i class="bi bi-check-circle-fill me-1"></i> Tepat Waktu
-                                                </span>
-                                            <% } %>
-                                        </td>
-                                    </tr>
-                                    <% }) %>
-                                <% } else { %>
-                                    <tr>
-                                        <td colspan="3" class="text-center py-5 text-muted">
-                                            <i class="bi bi-calendar-x fs-2 d-block mb-2"></i> Belum ada rekaman absensi untuk akun Anda.
-                                        </td>
-                                    </tr>
-                                <% } %>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Bagian Riwayat Pengajuan Izin / Cuti Karyawan -->
-                <div class="card shadow-sm border-0 bg-white p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-bold m-0 text-dark"><i class="bi bi-clock-history me-2 text-success"></i>Status Pengajuan Izin / Cuti Anda</h5>
-                        <span class="badge bg-light text-dark border">Data Perizinan</span>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Tanggal Mulai</th>
-                                    <th>Tanggal Selesai</th>
-                                    <th>Jenis</th>
-                                    <th>Alasan</th>
-                                    <th>Status Keputusan</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <% if (typeof leaves !== 'undefined' && leaves.length > 0) { %>
-                                    <% leaves.forEach(leave => { %>
-                                        <tr>
-                                            <td class="fw-semibold"><%= leave.tanggal_mulai %></td>
-                                            <td><%= leave.tanggal_selesai %></td>
-                                            <td><span class="badge bg-secondary"><%= leave.jenis %></span></td>
-                                            <td class="text-muted"><%= leave.alasan || '-' %></td>
-                                            <td>
-                                                <% if(leave.status === 'Pending') { %>
-                                                    <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Menunggu Persetujuan</span>
-                                                <% } else if(leave.status === 'Disetujui') { %>
-                                                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Disetujui Admin</span>
-                                                <% } else { %>
-                                                    <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Ditolak Admin</span>
-                                                <% } %>
-                                            </td>
-                                        </tr>
-                                    <% }) %>
-                                <% } else { %>
-                                    <tr>
-                                        <td colspan="5" class="text-center text-muted py-4">Anda belum pernah mengajukan izin/cuti.</td>
-                                    </tr>
-                                <% } %>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-            </div> <!-- Penutup col-lg-8 -->
-            
-        </div> <!-- Penutup row -->
-    </div> <!-- Penutup container -->
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function updateClock() {
-            const now = new Date();
-            
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            document.getElementById('live-clock').innerText = `${hours}:${minutes}:${seconds}`;
-            
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('live-date').innerText = now.toLocaleDateString('id-ID', options);
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-    </script>
-</body>
-</html>
+<%- include('partials/karyawan-foot') %>

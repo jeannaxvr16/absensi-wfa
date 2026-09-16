@@ -180,7 +180,7 @@ router.get('/login', (req, res) => {
 // Proses Validasi Authentikasi Login
 router.post('/login', async (req, res) => {
     try {
-        const { email, password, device_id } = req.body
+        const { email, password } = req.body
 
         const user = await User.findOne({ where: { email } })
         if (!user) {
@@ -190,28 +190,6 @@ router.post('/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password)
         if (!isMatch) {
             return res.render('login', { error: 'Email atau password salah!' })
-        }
-
-        // ==========================================
-        // DEVICE BINDING KHUSUS KARYAWAN
-        // ==========================================
-        // device_id dibuat oleh browser dan disimpan di localStorage.
-        // Saat login pertama, device diikat ke akun.
-        // Login berikutnya dari device berbeda akan ditolak.
-        if (user.role === 'karyawan') {
-            if (!device_id || typeof device_id !== 'string' || device_id.length < 20 || device_id.length > 128) {
-                return res.render('login', {
-                    error: 'Identitas perangkat tidak dapat dibaca. Silakan aktifkan JavaScript lalu coba lagi.'
-                })
-            }
-
-            if (!user.device_id) {
-                await user.update({ device_id })
-            } else if (user.device_id !== device_id) {
-                return res.render('login', {
-                    error: 'Akun ini sudah terikat ke perangkat lain. Silakan gunakan perangkat yang sudah terdaftar atau minta Admin melakukan reset perangkat.'
-                })
-            }
         }
 
         // Menyimpan data user ke Session setelah berhasil login
@@ -243,24 +221,17 @@ router.post('/login', async (req, res) => {
 
 router.get('/dashboard', async (req, res) => {
     try {
-        if (!req.session || !req.session.user) {
-            return res.redirect('/login');
-        }
+        if (!req.session || !req.session.user) return res.redirect('/login');
+        if (req.session.user.role !== 'karyawan') return res.redirect('/admin');
 
-        const sessionUser = req.session.user;
+        const user = await User.findByPk(req.session.user.id);
+        if (!user) return res.status(404).send('User tidak ditemukan');
 
-        const user = await User.findByPk(sessionUser.id)
-        if (!user) {
-            return res.status(404).send('User tidak ditemukan')
-        }
-
-        // Ambil data riwayat absensi mentah
         const attendancesRaw = await Attendance.findAll({
             where: { user_id: user.id },
             order: [['waktu', 'DESC']]
-        })
+        });
 
-        // UBAH: Hitung ulang status keterlambatan dinamis untuk tiap baris riwayat
         const attendances = attendancesRaw.map(att => {
             const data = att.toJSON ? att.toJSON() : att;
             return {
@@ -269,26 +240,94 @@ router.get('/dashboard', async (req, res) => {
             };
         });
 
-        // Ambil data riwayat cuti dari database berdasarkan id user
         const leaves = await Leave.findAll({
             where: { user_id: user.id },
             order: [['createdAt', 'DESC']]
-        })
+        });
 
-        // Kirim objek ke dashboard.ejs
-        res.render('dashboard', { user, attendances, leaves })
+        const jakartaToday = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+        const todayAttendanceRaw = attendances.find(item => {
+            return new Date(item.waktu).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }) === jakartaToday;
+        });
 
+        let todayAttendance = null;
+        if (todayAttendanceRaw) {
+            const date = new Date(todayAttendanceRaw.waktu);
+            todayAttendance = {
+                time: date.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' }),
+                latitude: todayAttendanceRaw.latitude || '-',
+                longitude: todayAttendanceRaw.longitude || '-',
+                status: todayAttendanceRaw.statusTelat || 'Tepat Waktu'
+            };
+        }
+
+        const stats = {
+            hadir: attendances.length,
+            terlambat: attendances.filter(a => (a.statusTelat || '').toLowerCase().includes('terlambat')).length,
+            pengajuan: leaves.length,
+            disetujui: leaves.filter(l => l.status === 'Disetujui').length
+        };
+
+        const shiftName = (user.shift || 'Pagi').toLowerCase();
+        const shiftTime = shiftName === 'siang' ? '13:00 - 21:00' :
+            (shiftName === 'sore' || shiftName === 'malam') ? '21:00 - 05:00' : '08:00 - 13:00';
+
+        res.render('dashboard', {
+            user,
+            currentUser: user,
+            attendances,
+            leaves,
+            recentLeaves: leaves.slice(0, 4),
+            todayAttendance,
+            stats,
+            shiftTime,
+            dashboardDate: new Date().toLocaleDateString('id-ID', {
+                timeZone: 'Asia/Jakarta', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+            })
+        });
     } catch (error) {
-        console.log(error)
-        res.status(500).send('Gagal memuat halaman dashboard karyawan.')
+        console.log(error);
+        res.status(500).send('Gagal memuat halaman dashboard karyawan.');
     }
-})
+});
 
-router.get('/scan', (req, res) => {
-    if (!req.session || !req.session.user) {
-        return res.redirect('/login');
+// Riwayat presensi dibuat menjadi halaman tersendiri agar dashboard tetap ringkas.
+router.get('/riwayat-presensi', async (req, res) => {
+    try {
+        if (!req.session || !req.session.user) return res.redirect('/login');
+        if (req.session.user.role !== 'karyawan') return res.redirect('/admin');
+        const user = await User.findByPk(req.session.user.id);
+        if (!user) return res.status(404).send('User tidak ditemukan');
+        const rows = await Attendance.findAll({ where: { user_id: user.id }, order: [['waktu', 'DESC']] });
+        const attendances = rows.map(att => {
+            const data = att.toJSON();
+            return { ...data, statusTelat: hitungStatusKeterlambatan(data.waktu, user.shift || 'pagi') };
+        });
+        res.render('history', { user, currentUser: user, attendances });
+    } catch (error) {
+        console.log(error);
+        res.status(500).send('Gagal memuat riwayat presensi.');
     }
-    res.render('scan')
+});
+
+router.get('/profil', async (req, res) => {
+    try {
+        if (!req.session || !req.session.user) return res.redirect('/login');
+        if (req.session.user.role !== 'karyawan') return res.redirect('/admin');
+        const user = await User.findByPk(req.session.user.id);
+        if (!user) return res.status(404).send('User tidak ditemukan');
+        res.render('profile', { user, currentUser: user });
+    } catch (error) {
+        console.log(error);
+        res.status(500).send('Gagal memuat profil.');
+    }
+});
+
+router.get('/scan', async (req, res) => {
+    if (!req.session || !req.session.user) return res.redirect('/login');
+    if (req.session.user.role !== 'karyawan') return res.redirect('/admin');
+    const user = await User.findByPk(req.session.user.id);
+    res.render('scan', { user, currentUser: user });
 })
 
 // ==========================================

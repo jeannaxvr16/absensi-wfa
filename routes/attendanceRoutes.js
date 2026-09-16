@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const crypto = require('crypto')
+const jwt = require('jsonwebtoken')
 const { Op } = require('sequelize')
 
 // ==========================================
@@ -11,56 +11,12 @@ const User = require('../models/user')
 const Leave = require('../models/leave')
 
 // ==========================================
-// TOTP QR DINAMIS
+// SECRET QR DINAMIS
+// HARUS SAMA DENGAN YANG DIPAKAI SAAT SIGN
 // ==========================================
-const TOTP_PERIOD_SECONDS = 30
-const TOTP_DIGITS = 6
-const TOTP_SECRET = process.env.TOTP_SECRET || ''
-
-function base32ToBuffer(base32) {
-    const clean = String(base32).toUpperCase().replace(/[^A-Z2-7]/g, '')
-    if (!clean) return Buffer.alloc(0)
-    let bits = ''
-    for (const char of clean) {
-        const value = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'.indexOf(char)
-        if (value >= 0) bits += value.toString(2).padStart(5, '0')
-    }
-    const bytes = []
-    for (let i = 0; i + 8 <= bits.length; i += 8) {
-        bytes.push(parseInt(bits.slice(i, i + 8), 2))
-    }
-    return Buffer.from(bytes)
-}
-
-function generateTotp(secret, timestampMs = Date.now()) {
-    const key = base32ToBuffer(secret)
-    if (!key.length) throw new Error('TOTP_SECRET belum dikonfigurasi.')
-    const counter = Math.floor(timestampMs / 1000 / TOTP_PERIOD_SECONDS)
-    const counterBuffer = Buffer.alloc(8)
-    counterBuffer.writeBigUInt64BE(BigInt(counter))
-    const hmac = crypto.createHmac('sha1', key).update(counterBuffer).digest()
-    const offset = hmac[hmac.length - 1] & 0x0f
-    const binary =
-        ((hmac[offset] & 0x7f) << 24) |
-        (hmac[offset + 1] << 16) |
-        (hmac[offset + 2] << 8) |
-        hmac[offset + 3]
-    return String(binary % (10 ** TOTP_DIGITS)).padStart(TOTP_DIGITS, '0')
-}
-
-function verifyTotp(token, secret, timestampMs = Date.now()) {
-    if (!/^\d{6}$/.test(String(token || ''))) return false
-    for (const offset of [-1, 0, 1]) {
-        if (generateTotp(secret, timestampMs + offset * TOTP_PERIOD_SECONDS * 1000) === String(token)) {
-            return true
-        }
-    }
-    return false
-}
-
-function getTotpRemainingSeconds(timestampMs = Date.now()) {
-    return TOTP_PERIOD_SECONDS - (Math.floor(timestampMs / 1000) % TOTP_PERIOD_SECONDS)
-}
+const QR_SECRET =
+    process.env.SESSION_SECRET ||
+    'rahasia_super_aman_absensi_wfa_2026'
 
 
 // ==========================================
@@ -242,7 +198,6 @@ router.post(
         try {
 
             const {
-                qr_token,
                 dynamic_token,
                 latitude,
                 longitude
@@ -280,94 +235,67 @@ router.post(
 
             if (dynamic_token) {
 
-                const dynamicPrefix = 'WFA_DYNAMIC:'
-                const totpToken = String(dynamic_token).startsWith(dynamicPrefix)
-                    ? String(dynamic_token).slice(dynamicPrefix.length)
-                    : String(dynamic_token)
+                let decoded
 
-                if (!TOTP_SECRET) {
-                    return res.status(500).json({
-                        message: 'Konfigurasi TOTP_SECRET belum tersedia di server.'
-                    })
-                }
-
-                let validTotp = false
                 try {
-                    validTotp = verifyTotp(totpToken, TOTP_SECRET)
+                    const rawDynamicToken = String(dynamic_token).startsWith('WFA_DYNAMIC:')
+                        ? String(dynamic_token).slice('WFA_DYNAMIC:'.length)
+                        : String(dynamic_token)
+
+                    decoded = jwt.verify(rawDynamicToken, QR_SECRET)
+
                 } catch (error) {
-                    console.error('TOTP ERROR:', error.message)
-                }
 
-                if (!validTotp) {
-                    return res.status(400).json({
-                        message: 'QR Dinamis tidak valid atau sudah kedaluwarsa. Silakan scan QR terbaru.'
-                    })
-                }
-
-                // Identitas karyawan berasal dari akun yang sedang login.
-                user = loggedInUser
-                tokenYangDisimpan = `${dynamicPrefix}${totpToken}`
-            }
-
-
-            // ==========================================
-            // QR PRIBADI
-            // ==========================================
-
-            else if (qr_token) {
-
-                const qrUser =
-                    await User.findOne({
-                        where: {
-                            qr_token: qr_token
-                        }
-                    })
-
-
-                if (!qrUser) {
+                    console.error(
+                        'QR JWT ERROR:',
+                        error.message
+                    )
 
                     return res.status(400).json({
                         message:
-                            'QR Code tidak valid.'
+                            'QR Dinamis sudah kedaluwarsa atau tidak valid.'
                     })
 
                 }
 
 
-                // QR pribadi hanya boleh dipakai
-                // oleh pemilik akun
+                // Pastikan token memang token absensi
                 if (
-                    Number(qrUser.id) !==
-                    Number(loggedInUser.id)
+                    !decoded ||
+                    decoded.type !==
+                    'dynamic_attendance_qr'
                 ) {
 
-                    return res.status(403).json({
+                    return res.status(400).json({
                         message:
-                            'QR Code bukan milik akun yang sedang login.'
+                            'QR Dinamis tidak valid.'
                     })
 
                 }
 
 
-                user = qrUser
+                // Identitas karyawan berasal dari
+                // akun yang sedang login
+                user = loggedInUser
+
 
                 tokenYangDisimpan =
-                    qr_token
+                    `WFA_DYNAMIC:${dynamic_token}`
 
             }
 
 
+            // QR PRIBADI / QR REGISTRASI TIDAK DITERIMA UNTUK ABSENSI.
+            // Identitas karyawan diambil dari akun yang sedang login.
+
             // ==========================================
-            // QR TIDAK ADA
+            // QR TIDAK ADA / BUKAN QR DINAMIS
             // ==========================================
 
             else {
-
                 return res.status(400).json({
-                    message:
-                        'QR Code tidak ditemukan.'
+                    message: 'QR absensi tidak valid. Gunakan QR Dinamis dari Admin.'
                 })
-
             }
 
 
@@ -407,39 +335,6 @@ router.post(
                         'Koordinat GPS tidak valid.'
                 })
 
-            }
-
-
-            // ==========================================
-            // VALIDASI GEOFENCING
-            // Pusat dan radius dikonfigurasi melalui Railway.
-            // ==========================================
-            const geofenceLat = parseFloat(process.env.GEOFENCE_LATITUDE)
-            const geofenceLng = parseFloat(process.env.GEOFENCE_LONGITUDE)
-            const geofenceRadius = parseFloat(process.env.GEOFENCE_RADIUS_METERS)
-
-            if (Number.isNaN(geofenceLat) || Number.isNaN(geofenceLng) || Number.isNaN(geofenceRadius) || geofenceRadius <= 0) {
-                return res.status(500).json({
-                    message: 'Konfigurasi geofencing belum lengkap di server.'
-                })
-            }
-
-            const toRadians = value => value * Math.PI / 180
-            const earthRadiusMeters = 6371000
-            const dLat = toRadians(geofenceLat - lat)
-            const dLng = toRadians(geofenceLng - lng)
-            const lat1 = toRadians(lat)
-            const lat2 = toRadians(geofenceLat)
-            const a =
-                Math.sin(dLat / 2) ** 2 +
-                Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2
-            const distanceMeters =
-                2 * earthRadiusMeters * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-
-            if (distanceMeters > geofenceRadius) {
-                return res.status(403).json({
-                    message: `Presensi ditolak. Lokasi Anda berada ${Math.round(distanceMeters / 1000)} km dari titik pusat dan di luar radius geofencing ${Math.round(geofenceRadius / 1000)} km.`
-                })
             }
 
 
@@ -968,31 +863,8 @@ router.post(
 // Identitas karyawan TIDAK berasal dari QR.
 // Identitas diambil dari session login.
 //
-// Token TOTP berubah setiap 30 detik.
+// Token berlaku 5 menit.
 // ==========================================
-
-router.get(
-    '/admin/qr-dinamis/token',
-    isAdmin,
-    (req, res) => {
-        try {
-            if (!TOTP_SECRET) {
-                return res.status(500).json({ message: 'TOTP_SECRET belum dikonfigurasi di server.' })
-            }
-            const nowMs = Date.now()
-            const token = generateTotp(TOTP_SECRET, nowMs)
-            return res.json({
-                qrData: `WFA_DYNAMIC:${token}`,
-                token,
-                expiresInSeconds: getTotpRemainingSeconds(nowMs)
-            })
-        } catch (error) {
-            console.error('Error generate TOTP:', error)
-            return res.status(500).json({ message: 'Gagal membuat QR Dinamis.' })
-        }
-    }
-)
-
 
 router.get(
     '/admin/qr-dinamis',
@@ -1056,18 +928,37 @@ router.get(
 
 
             // ==========================================
-            // BUAT TOTP QR DINAMIS
+            // BUAT JWT QR DINAMIS
             // ==========================================
-            if (!TOTP_SECRET) {
-                return res.status(500).send('TOTP_SECRET belum dikonfigurasi di server.')
-            }
 
-            const dynamicToken = generateTotp(TOTP_SECRET)
+            const dynamicToken =
+                jwt.sign(
+
+                    {
+                        type:
+                            'dynamic_attendance_qr',
+
+                        createdAt:
+                            Date.now()
+
+                    },
+
+                    QR_SECRET,
+
+                    {
+                        expiresIn:
+                            '5m'
+                    }
+
+                )
+
 
             // ==========================================
             // DATA YANG MASUK KE QR
             // ==========================================
-            const qrData = `WFA_DYNAMIC:${dynamicToken}`
+
+            const qrData =
+                `WFA_DYNAMIC:${dynamicToken}`
 
 
             // ==========================================

@@ -1,0 +1,23 @@
+<%- include('partials/karyawan-head', { title: 'Riwayat Presensi - WFA Attendance' }) %>
+<%- include('partials/karyawan-sidebar', { active: 'history', user: user }) %>
+
+<div class="wfa-page-title"><h1>Riwayat Presensi</h1><p>Daftar kehadiran, waktu, status, dan lokasi presensi Anda.</p></div>
+<section class="wfa-card">
+  <div class="wfa-card-head"><h2><i class="bi bi-clock-history text-primary me-2"></i>Data Presensi Saya</h2><span><%= attendances.length %> data</span></div>
+  <div class="table-responsive">
+    <table class="wfa-table">
+      <thead><tr><th>Tanggal & Waktu</th><th>Status</th><th>Latitude</th><th>Longitude</th></tr></thead>
+      <tbody>
+      <% if (attendances.length) { attendances.forEach(item => { const late=(item.statusTelat||'').toLowerCase().includes('terlambat'); %>
+        <tr>
+          <td><strong><%= new Date(item.waktu).toLocaleString('id-ID',{timeZone:'Asia/Jakarta',dateStyle:'medium',timeStyle:'short'}) %> WIB</strong></td>
+          <td><span class="wfa-pill <%= late ? 'warning' : 'success' %>"><%= item.statusTelat || 'Tepat Waktu' %></span></td>
+          <td><%= item.latitude || '-' %></td><td><%= item.longitude || '-' %></td>
+        </tr>
+      <% }) } else { %><tr><td colspan="4"><div class="wfa-empty"><i class="bi bi-calendar-x fs-3 d-block mb-2"></i>Belum ada data presensi.</div></td></tr><% } %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<%- include('partials/karyawan-foot') %>

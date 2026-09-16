@@ -1,0 +1,35 @@
+<aside class="wfa-sidebar">
+  <a href="/dashboard" class="wfa-brand text-white">
+    <div class="wfa-brand-icon"><i class="bi bi-calendar2-check"></i></div>
+    <div><strong>WFA Attendance</strong><span>Work From Anywhere</span></div>
+  </a>
+
+  <ul class="wfa-menu">
+    <li><a class="<%= active === 'dashboard' ? 'active' : '' %>" href="/dashboard"><i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span></a></li>
+    <li><a class="<%= active === 'scan' ? 'active' : '' %>" href="/scan"><i class="bi bi-qr-code-scan"></i><span>Scan QR Presensi</span></a></li>
+    <li><a class="<%= active === 'leave' ? 'active' : '' %>" href="/leave/new"><i class="bi bi-calendar-plus"></i><span>Pengajuan Izin / Cuti</span></a></li>
+    <li><a class="<%= active === 'history' ? 'active' : '' %>" href="/riwayat-presensi"><i class="bi bi-clock-history"></i><span>Riwayat Presensi</span></a></li>
+    <li><a class="<%= active === 'profile' ? 'active' : '' %>" href="/profil"><i class="bi bi-person-circle"></i><span>Profil Saya</span></a></li>
+  </ul>
+
+  <div class="wfa-sidebar-bottom">
+    <a class="wfa-menu a d-flex align-items-center gap-2 text-white-50 px-2 py-2" href="/logout" style="font-size:12px;text-decoration:none;">
+      <i class="bi bi-box-arrow-right"></i><span>Logout</span>
+    </a>
+  </div>
+</aside>
+
+<div class="wfa-main">
+  <header class="wfa-topbar">
+    <div class="wfa-search"><i class="bi bi-search"></i><input type="text" placeholder="Cari menu atau fitur..." onkeydown="if(event.key==='Enter') this.blur()"></div>
+    <div class="wfa-user">
+      <i class="bi bi-bell fs-5 text-secondary me-1"></i>
+      <div class="wfa-avatar"><%= (((typeof user !== 'undefined' && user) ? user : ((typeof currentUser !== 'undefined' && currentUser) ? currentUser : {})).nama || 'K').charAt(0).toUpperCase() %></div>
+      <div class="wfa-user-name">
+        <strong><%= ((typeof user !== 'undefined' && user) ? user : ((typeof currentUser !== 'undefined' && currentUser) ? currentUser : {})).nama || 'Karyawan' %></strong>
+        <span>Karyawan</span>
+      </div>
+      <i class="bi bi-chevron-down text-secondary small"></i>
+    </div>
+  </header>
+  <main class="wfa-content">
