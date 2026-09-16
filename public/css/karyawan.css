@@ -134,3 +134,733 @@ a { text-decoration: none; }
 @media(max-width:1100px){ .wfa-quick{grid-template-columns:repeat(2,1fr)} .wfa-grid{grid-template-columns:1fr} .wfa-hero-copy{max-width:70%} }
 @media(max-width:800px){ .wfa-sidebar{width:76px;padding:18px 10px}.wfa-brand{justify-content:center;padding:2px 0 20px}.wfa-brand>div:last-child,.wfa-menu span,.wfa-sidebar-bottom span{display:none}.wfa-brand-icon{width:44px}.wfa-menu a{justify-content:center;padding:13px}.wfa-menu i{margin:0}.wfa-main{margin-left:76px}.wfa-topbar{padding:0 16px}.wfa-search{width:200px}.wfa-content{padding:18px 16px}.wfa-hero-art{opacity:.35;right:-20px}.wfa-hero-copy{max-width:90%}.wfa-info-row{grid-template-columns:1fr}.wfa-info{border-right:0;border-bottom:1px solid var(--wfa-border);padding:10px 0}.wfa-info:last-child{border-bottom:0}.wfa-detail{grid-template-columns:1fr} }
 @media(max-width:560px){ .wfa-quick{grid-template-columns:1fr}.wfa-search{display:none}.wfa-hero{padding:24px;min-height:190px}.wfa-hero-copy h1{font-size:25px}.wfa-metrics{grid-template-columns:1fr}.wfa-table{min-width:620px} }
+
+/* =====================================================
+   PERBAIKAN HERO DASHBOARD + JAM REAL-TIME
+===================================================== */
+
+
+/* HERO */
+
+.wfa-hero {
+    position: relative;
+
+    min-height: 245px;
+
+    padding: 34px 40px;
+
+    display: flex;
+    align-items: center;
+
+    overflow: hidden;
+
+    border-radius: 22px;
+
+    color: #153a72;
+
+    background:
+        linear-gradient(
+            105deg,
+            #dcecff 0%,
+            #c7ddfa 45%,
+            #eef7ff 100%
+        );
+
+    box-shadow:
+        0 18px 45px rgba(48, 91, 145, .12);
+
+    margin-bottom: 20px;
+}
+
+
+/* LINGKARAN BACKGROUND */
+
+.wfa-hero::before {
+
+    content: "";
+
+    position: absolute;
+
+    width: 310px;
+    height: 310px;
+
+    border-radius: 50%;
+
+    right: 150px;
+    top: -210px;
+
+    background:
+        rgba(255, 255, 255, .35);
+
+    pointer-events: none;
+}
+
+
+/* BENTUK BACKGROUND BAWAH */
+
+.wfa-hero::after {
+
+    content: "";
+
+    position: absolute;
+
+    width: 390px;
+    height: 160px;
+
+    right: -30px;
+    bottom: -85px;
+
+    border-radius: 50%;
+
+    background:
+        rgba(37, 99, 235, .13);
+
+    transform:
+        rotate(-8deg);
+
+    pointer-events: none;
+}
+
+
+/* =====================================================
+   TEKS HERO
+===================================================== */
+
+.wfa-hero-copy {
+
+    position: relative;
+
+    z-index: 4;
+
+    width: 52%;
+
+    max-width: 600px;
+}
+
+
+.wfa-hero-copy small {
+
+    display: block;
+
+    margin-bottom: 9px;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    color: #24558f;
+
+    opacity: .9;
+}
+
+
+.wfa-hero-copy h1 {
+
+    margin: 8px 0 7px;
+
+    font-size: 32px;
+
+    line-height: 1.15;
+
+    font-weight: 800;
+
+    color: #153a72;
+}
+
+
+.wfa-hero-copy p {
+
+    margin: 0;
+
+    max-width: 560px;
+
+    font-size: 12px;
+
+    line-height: 1.7;
+
+    color: #466486;
+}
+
+
+/* =====================================================
+   JAM DI SAMPING TEKS
+===================================================== */
+
+.wfa-hero-clock {
+
+    position: absolute;
+
+    z-index: 5;
+
+    /*
+     * Posisi kanan:
+     * masih sebelum ilustrasi laptop
+     */
+    right: 350px;
+
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 13px 16px;
+
+    min-width: 205px;
+
+    border-radius: 17px;
+
+    background:
+        rgba(255, 255, 255, .78);
+
+    border:
+        1px solid rgba(255, 255, 255, .95);
+
+    box-shadow:
+        0 10px 30px rgba(36, 85, 143, .10);
+
+    backdrop-filter:
+        blur(10px);
+
+    -webkit-backdrop-filter:
+        blur(10px);
+}
+
+
+/* ICON JAM */
+
+.wfa-clock-icon {
+
+    width: 43px;
+    height: 43px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 13px;
+
+    background: #e5efff;
+
+    color: #2563eb;
+
+    font-size: 19px;
+}
+
+
+/* CONTENT JAM */
+
+.wfa-clock-content {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 3px;
+
+    min-width: 0;
+}
+
+
+/* ANGKA JAM */
+
+#live-clock {
+
+    color: #123f78;
+
+    font-size: 24px;
+
+    line-height: 1;
+
+    font-weight: 800;
+
+    letter-spacing: 1px;
+
+    font-variant-numeric:
+        tabular-nums;
+
+    white-space: nowrap;
+}
+
+
+/* TANGGAL */
+
+#live-date {
+
+    color: #6683a5;
+
+    font-size: 10px;
+
+    font-weight: 500;
+
+    white-space: nowrap;
+}
+
+
+/* WIB */
+
+.wfa-clock-zone {
+
+    align-self: flex-start;
+
+    flex-shrink: 0;
+
+    padding: 5px 8px;
+
+    border-radius: 8px;
+
+    background: #dbeafe;
+
+    color: #2563eb;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+    letter-spacing: .5px;
+}
+
+
+/* =====================================================
+   ILUSTRASI HERO
+===================================================== */
+
+.wfa-hero-art {
+
+    position: absolute;
+
+    right: 25px;
+
+    bottom: 0;
+
+    width: 310px;
+
+    height: 175px;
+
+    z-index: 2;
+
+    pointer-events: none;
+}
+
+
+/* LAPTOP */
+
+.wfa-laptop {
+
+    position: absolute;
+
+    right: 25px;
+
+    bottom: 24px;
+
+    width: 190px;
+
+    height: 108px;
+
+    border-radius:
+        10px 10px 5px 5px;
+
+    background:
+        #183b64;
+
+    box-shadow:
+        0 18px 35px rgba(25, 57, 92, .18);
+
+    transform:
+        skewY(-1deg);
+}
+
+
+.wfa-laptop::before {
+
+    content: "";
+
+    position: absolute;
+
+    inset: 8px;
+
+    border-radius: 5px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #dbeafe,
+            #93c5fd
+        );
+}
+
+
+.wfa-laptop::after {
+
+    content: "";
+
+    position: absolute;
+
+    width: 220px;
+
+    height: 8px;
+
+    bottom: -8px;
+
+    left: -15px;
+
+    border-radius:
+        0 0 12px 12px;
+
+    background:
+        #9fb5cf;
+}
+
+
+/* ORANG */
+
+.wfa-person {
+
+    position: absolute;
+
+    right: 173px;
+
+    bottom: 23px;
+
+    width: 70px;
+
+    height: 115px;
+
+    border-radius:
+        45px 45px 20px 20px;
+
+    background:
+        linear-gradient(
+            180deg,
+            #1f5fa6,
+            #194d85
+        );
+}
+
+
+.wfa-person::before {
+
+    content: "";
+
+    position: absolute;
+
+    width: 38px;
+
+    height: 38px;
+
+    border-radius: 50%;
+
+    background:
+        #c58b6c;
+
+    top: -28px;
+
+    left: 16px;
+}
+
+
+/* DAUN */
+
+.wfa-leaf {
+
+    position: absolute;
+
+    width: 90px;
+
+    height: 90px;
+
+    border-radius:
+        90% 0 90% 0;
+
+    background:
+        rgba(16, 185, 129, .28);
+
+    transform:
+        rotate(20deg);
+
+    right: -3px;
+
+    bottom: 8px;
+}
+
+
+/* =====================================================
+   RESPONSIVE TABLET
+===================================================== */
+
+@media (max-width: 1250px) {
+
+    .wfa-hero-clock {
+
+        right: 315px;
+
+    }
+
+    .wfa-hero-art {
+
+        right: 10px;
+
+        transform:
+            scale(.9);
+
+        transform-origin:
+            bottom right;
+
+    }
+
+}
+
+
+/* =====================================================
+   RESPONSIVE 1100PX
+===================================================== */
+
+@media (max-width: 1100px) {
+
+    .wfa-hero {
+
+        min-height: 240px;
+
+    }
+
+
+    .wfa-hero-copy {
+
+        width: 50%;
+
+    }
+
+
+    .wfa-hero-clock {
+
+        right: 275px;
+
+    }
+
+
+    .wfa-hero-art {
+
+        width: 280px;
+
+        opacity: .8;
+
+    }
+
+}
+
+
+/* =====================================================
+   RESPONSIVE 900PX
+===================================================== */
+
+@media (max-width: 900px) {
+
+    .wfa-hero {
+
+        min-height: 230px;
+
+        padding: 30px;
+
+    }
+
+
+    .wfa-hero-copy {
+
+        width: 52%;
+
+    }
+
+
+    .wfa-hero-copy h1 {
+
+        font-size: 29px;
+
+    }
+
+
+    .wfa-hero-clock {
+
+        right: 210px;
+
+        min-width: 190px;
+
+        padding: 11px 13px;
+
+    }
+
+
+    #live-clock {
+
+        font-size: 21px;
+
+    }
+
+
+    #live-date {
+
+        font-size: 9px;
+
+    }
+
+
+    .wfa-clock-icon {
+
+        width: 39px;
+
+        height: 39px;
+
+        font-size: 17px;
+
+    }
+
+
+    .wfa-hero-art {
+
+        width: 230px;
+
+        transform:
+            scale(.8);
+
+        transform-origin:
+            bottom right;
+
+    }
+
+}
+
+
+/* =====================================================
+   RESPONSIVE 768PX
+===================================================== */
+
+@media (max-width: 768px) {
+
+    .wfa-hero {
+
+        min-height: 330px;
+
+        display: block;
+
+        padding: 28px 25px;
+
+    }
+
+
+    .wfa-hero-copy {
+
+        width: 100%;
+
+        max-width: 100%;
+
+        padding-right: 0;
+
+    }
+
+
+    .wfa-hero-copy h1 {
+
+        font-size: 30px;
+
+    }
+
+
+    /*
+     * Jam tetap di samping,
+     * tapi dipindahkan sedikit
+     * agar tidak bertabrakan
+     * dengan teks.
+     */
+
+    .wfa-hero-clock {
+
+        position: absolute;
+
+        left: 25px;
+
+        right: auto;
+
+        top: auto;
+
+        bottom: 28px;
+
+        transform: none;
+
+    }
+
+
+    .wfa-hero-art {
+
+        width: 220px;
+
+        height: 150px;
+
+        right: -15px;
+
+        opacity: .45;
+
+    }
+
+}
+
+
+/* =====================================================
+   RESPONSIVE HP
+===================================================== */
+
+@media (max-width: 560px) {
+
+    .wfa-hero {
+
+        min-height: 350px;
+
+        padding: 24px;
+
+    }
+
+
+    .wfa-hero-copy h1 {
+
+        font-size: 27px;
+
+    }
+
+
+    .wfa-hero-copy p {
+
+        font-size: 11px;
+
+    }
+
+
+    .wfa-hero-clock {
+
+        left: 24px;
+
+        bottom: 24px;
+
+        min-width: 190px;
+
+    }
+
+
+    #live-clock {
+
+        font-size: 20px;
+
+    }
+
+
+    .wfa-hero-art {
+
+        display: none;
+
+    }
+
+}
